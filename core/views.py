@@ -613,6 +613,14 @@ def submit_challenge(request, challenge_slug: str):
     if not participant:
         return redirect("core:login")
 
+    is_open, _state, hunt_message = _hunt_window_status()
+    if not is_open and not participant.can_bypass_hunt_window():
+        messages.error(
+            request,
+            hunt_message or "Challenge submissions are not available right now.",
+        )
+        return redirect("core:challenge")
+
     team_year = participant.graduation_year
     team_years = set(settings.SCAV_HUNT_TEAM_YEARS)
 
@@ -965,7 +973,8 @@ def analytics_view(request):
     )
 
     # Leaderboard
-    leaderboard = _build_leaderboard(participant.graduation_year)
+    viewed_team_year = admin_view_as_class or participant.graduation_year
+    leaderboard = _build_leaderboard(viewed_team_year)
 
     context = {
         "participant": participant,
@@ -1012,9 +1021,6 @@ def switch_class_view(request):
             year_int = int(selected_year)
             if year_int in team_years:
                 request.session[SESSION_ADMIN_VIEW_AS_CLASS] = year_int
-                # Temporarily update the participant's graduation year for viewing
-                participant.graduation_year = year_int
-                participant.save(update_fields=["graduation_year"])
                 messages.success(request, f"Now viewing as Class of {year_int}.")
             else:
                 messages.error(request, "Invalid class year selected.")
