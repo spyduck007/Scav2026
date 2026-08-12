@@ -232,12 +232,21 @@ class ChallengeDependency(models.Model):
             raise ValidationError("Dependencies must be within the same category.")
 
         if challenge.pk and prerequisite.pk:
-            if ChallengeDependency.objects.filter(
-                challenge=prerequisite, prerequisite=challenge
-            ).exists():
-                raise ValidationError(
-                    "Circular dependency detected between challenges."
-                )
+            pending_ids = [prerequisite.pk]
+            visited_ids: set[int] = set()
+            while pending_ids:
+                current_ids = pending_ids
+                pending_ids = []
+                for dependency in ChallengeDependency.objects.filter(
+                    challenge_id__in=current_ids
+                ).only("prerequisite_id"):
+                    if dependency.prerequisite_id == challenge.pk:
+                        raise ValidationError(
+                            "Circular dependency detected between challenges."
+                        )
+                    if dependency.prerequisite_id not in visited_ids:
+                        visited_ids.add(dependency.prerequisite_id)
+                        pending_ids.append(dependency.prerequisite_id)
 
     def __str__(self) -> str:  # pragma: no cover - trivial
         return f"{self.challenge} depends on {self.prerequisite}"
