@@ -17,7 +17,12 @@ from django.contrib.auth import (
 from django.core.exceptions import ImproperlyConfigured
 from django.db import transaction
 from django.db.models import Count, Prefetch, Sum
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
+from django.http import (
+    HttpResponse,
+    HttpResponseBadRequest,
+    HttpResponseRedirect,
+    JsonResponse,
+)
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import formats, timezone
@@ -621,6 +626,26 @@ def challenge_view(request):
     return render(request, "core/challenge_closed.html", base_context, status=403)
 
 
+def _wants_json_response(request) -> bool:
+    return request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+
+def _submission_response(request, *, status: str, message: str, payload: dict | None = None):
+    """Return JSON for the async answer form, or fall back to message+redirect."""
+    if _wants_json_response(request):
+        data = {"status": status, "message": message}
+        if payload:
+            data.update(payload)
+        return JsonResponse(data)
+
+    level = {
+        "correct": messages.SUCCESS,
+        "already_solved": messages.INFO,
+    }.get(status, messages.ERROR)
+    messages.add_message(request, level, message)
+    return redirect("core:challenge")
+
+
 @require_POST
 def submit_challenge(request, challenge_slug: str):
     participant = _get_logged_in_participant(request)
@@ -629,22 +654,22 @@ def submit_challenge(request, challenge_slug: str):
 
     is_open, _state, hunt_message = _hunt_window_status()
     if not is_open and not participant.can_bypass_hunt_window():
-        messages.error(
+        return _submission_response(
             request,
-            hunt_message or "Challenge submissions are not available right now.",
+            status="error",
+            message=hunt_message or "Challenge submissions are not available right now.",
         )
-        return redirect("core:challenge")
 
     team_year = participant.graduation_year
     team_years = set(settings.SCAV_HUNT_TEAM_YEARS)
 
     if team_year is None or team_year not in team_years:
-        messages.error(
+        return _submission_response(
             request,
-            "You do not have an assigned class year for the scavenger hunt. "
+            status="error",
+            message="You do not have an assigned class year for the scavenger hunt. "
             "Please contact an organizer to be added to a team.",
         )
-        return redirect("core:challenge")
 
     cooldown_seconds = getattr(settings, "SCAV_SUBMISSION_COOLDOWN_SECONDS", 0)
     submission_session_key = f"{SESSION_SUBMISSION_KEY_PREFIX}:{participant.pk}"
@@ -664,19 +689,20 @@ def submit_challenge(request, challenge_slug: str):
                     remaining_seconds = max(
                         1, ceil((next_allowed - now).total_seconds())
                     )
-                    messages.error(
+                    return _submission_response(
                         request,
-                        "Please wait {seconds} more second{plural} before submitting another answer.".format(
+                        status="error",
+                        message="Please wait {seconds} more second{plural} before submitting another answer.".format(
                             seconds=remaining_seconds,
                             plural="s" if remaining_seconds != 1 else "",
                         ),
                     )
-                    return redirect("core:challenge")
 
     submitted_answer = (request.POST.get("answer") or "").strip()
     if not submitted_answer:
-        messages.error(request, "Please enter an answer before submitting.")
-        return redirect("core:challenge")
+        return _submission_response(
+            request, status="error", message="Please enter an answer before submitting."
+        )
 
     with transaction.atomic():
         challenge = get_object_or_404(
@@ -692,30 +718,36 @@ def submit_challenge(request, challenge_slug: str):
             challenge=challenge, team_year=team_year
         ).first()
         if existing_team_solve:
-            messages.info(
+            return _submission_response(
                 request,
-                "Your class has already solved this challenge and earned "
+                status="already_solved",
+                message="Your class has already solved this challenge and earned "
                 f"{existing_team_solve.awarded_points} points.",
+                payload={
+                    "challenge": {
+                        "slug": challenge.slug,
+                        "awarded_points": existing_team_solve.awarded_points,
+                    }
+                },
             )
-            return redirect("core:challenge")
 
         if challenge.is_exclusive():
             if ChallengeSolve.objects.filter(challenge=challenge).exists():
-                messages.error(
+                return _submission_response(
                     request,
-                    "This exclusive challenge has already been claimed by another class.",
+                    status="error",
+                    message="This exclusive challenge has already been claimed by another class.",
                 )
-                return redirect("core:challenge")
 
         if challenge.requires_dependencies():
             prerequisites = challenge.prerequisites.all()
             unmet = prerequisites.exclude(solves__team_year=team_year)
             if unmet.exists():
-                messages.error(
+                return _submission_response(
                     request,
-                    "You must solve all prerequisite challenges before attempting this one.",
+                    status="error",
+                    message="You must solve all prerequisite challenges before attempting this one.",
                 )
-                return redirect("core:challenge")
 
         if cooldown_seconds > 0:
             request.session[submission_session_key] = timezone.now().isoformat()
@@ -737,8 +769,11 @@ def submit_challenge(request, challenge_slug: str):
                 submitted_answer=submitted_answer,
                 is_correct=False,
             )
-            messages.error(request, "Sorry, that answer is not correct. Try again!")
-            return redirect("core:challenge")
+            return _submission_response(
+                request,
+                status="incorrect",
+                message="Sorry, that answer is not correct. Try again!",
+            )
 
         solves_count = ChallengeSolve.objects.filter(challenge=challenge).count()
         awarded_points = challenge.points_for_next_solve(solves_count)
@@ -764,12 +799,28 @@ def submit_challenge(request, challenge_slug: str):
         if is_first_blood:
             _send_discord_first_blood(challenge, participant, team_year, awarded_points)
 
-        messages.success(
+        # If another challenge depends on this one, its unlock state can only
+        # be recomputed by a full catalog rebuild, so tell the client to
+        # refresh instead of trying to patch the DOM in place.
+        requires_refresh = challenge.unlocking_challenges.filter(is_active=True).exists()
+
+        response = _submission_response(
             request,
-            f"Challenge solved! {awarded_points} points awarded to the Class of {team_year}.",
+            status="correct",
+            message=f"Challenge solved! {awarded_points} points awarded to the Class of {team_year}.",
+            payload={
+                "challenge": {
+                    "slug": challenge.slug,
+                    "awarded_points": awarded_points,
+                    "solves_count": solves_count + 1,
+                    "is_first_blood": is_first_blood,
+                    "requires_refresh": requires_refresh,
+                },
+                "leaderboard": _build_leaderboard(participant.graduation_year),
+            },
         )
 
-    return redirect("core:challenge")
+    return response
 
 
 @require_POST
@@ -1208,12 +1259,21 @@ def user_detail_view(request, username: str):
         if team_total_points > 0:
             contribution_percent = round((total_points / team_total_points) * 100, 1)
 
+    # All submission attempts by this user, correct or not
+    user_submissions = (
+        ChallengeSubmission.objects.filter(participant=target_user)
+        .select_related("challenge", "challenge__category")
+        .order_by("-created_at")
+    )
+
     context = {
         "participant": participant,
         "target_user": target_user,
         "user_solves": user_solves,
+        "user_submissions": user_submissions,
         "total_points": total_points,
         "total_solves": total_solves,
+        "total_submissions": user_submissions.count(),
         "first_bloods": first_bloods,
         "category_stats": category_stats,
         "type_stats": type_stats,
@@ -1301,16 +1361,25 @@ def challenge_detail_view(request, challenge_slug: str):
                 }
             )
 
+    # All submission attempts for this challenge, correct or not
+    submissions = (
+        ChallengeSubmission.objects.filter(challenge=challenge)
+        .select_related("participant")
+        .order_by("-created_at")
+    )
+
     context = {
         "participant": participant,
         "challenge": challenge,
         "solves": solves,
+        "submissions": submissions,
         "first_blood": first_blood,
         "team_stats": team_stats,
         "dependent_challenges": dependent_challenges,
         "prerequisites": prerequisites,
         "points_progression": points_progression,
         "total_solves": solves.count(),
+        "total_submissions": submissions.count(),
         "current_points": challenge.points_for_next_solve(solves.count()),
     }
 

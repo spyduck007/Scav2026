@@ -110,23 +110,115 @@
     }
 
     const toastContainer = document.querySelector('[data-toast-container]');
-    if (toastContainer) {
-        function dismissToast(toast, delay) {
+    function dismissToast(toast, delay) {
+        window.setTimeout(function () {
+            if (!toast.isConnected) return;
+            toast.classList.add('toast--closing');
             window.setTimeout(function () {
-                if (!toast.isConnected) return;
-                toast.classList.add('toast--closing');
-                window.setTimeout(function () {
-                    toast.remove();
-                    if (!toastContainer.querySelector('[data-toast]')) toastContainer.hidden = true;
-                }, 180);
-            }, delay || 0);
-        }
-        toastContainer.querySelectorAll('[data-toast]').forEach(function (toast, index) {
-            const timer = window.setTimeout(function () { dismissToast(toast, 0); }, 4500 + index * 500);
-            const close = toast.querySelector('[data-toast-close]');
-            if (close) close.addEventListener('click', function () { window.clearTimeout(timer); dismissToast(toast, 0); });
-        });
+                toast.remove();
+                if (toastContainer && !toastContainer.querySelector('[data-toast]')) toastContainer.hidden = true;
+            }, 180);
+        }, delay || 0);
     }
+    function wireToast(toast) {
+        const timer = window.setTimeout(function () { dismissToast(toast, 0); }, 4500);
+        const close = toast.querySelector('[data-toast-close]');
+        if (close) close.addEventListener('click', function () { window.clearTimeout(timer); dismissToast(toast, 0); });
+    }
+    function showToast(message, tag) {
+        if (!toastContainer) return;
+        const toast = document.createElement('div');
+        toast.className = 'toast toast--' + (tag || 'info');
+        toast.setAttribute('data-toast', '');
+        toast.setAttribute('role', 'status');
+        toast.innerHTML = '<span class="toast__indicator" aria-hidden="true"></span>'
+            + '<div class="toast__content"></div>'
+            + '<button type="button" class="toast__close" data-toast-close aria-label="Dismiss notification">'
+            + '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15"/></svg></button>';
+        toast.querySelector('.toast__content').textContent = message;
+        toastContainer.hidden = false;
+        toastContainer.appendChild(toast);
+        wireToast(toast);
+    }
+    if (toastContainer) {
+        toastContainer.querySelectorAll('[data-toast]').forEach(wireToast);
+    }
+
+    const STATUS_TAGS = { correct: 'success', already_solved: 'info' };
+
+    function pluralize(count, word) {
+        return count + ' ' + word + (count === 1 ? '' : 's');
+    }
+
+    function renderLeaderboard(entries) {
+        const list = document.querySelector('.standings-panel .ranking-list--compact');
+        if (!list || !entries) return;
+        list.innerHTML = entries.map(function (entry) {
+            const rank = String(entry.rank).padStart(2, '0');
+            const current = entry.is_user_team ? ' ranking-row--current' : '';
+            return '<li class="ranking-row' + current + '">'
+                + '<span class="ranking-row__rank">' + rank + '</span>'
+                + '<span class="ranking-row__team">' + entry.label + '<small>' + pluralize(entry.member_count, 'member') + '</small></span>'
+                + '<strong>' + entry.score + '</strong>'
+                + '</li>';
+        }).join('');
+    }
+
+    function markChallengeSolved(slug, awardedPoints, solvesCount) {
+        const card = document.querySelector('.challenge-card[data-challenge-slug="' + slug + '"]');
+        if (!card) return;
+        card.classList.add('challenge-card--solved');
+        card.classList.remove('challenge-card--locked');
+        if (typeof solvesCount === 'number') {
+            const count = card.querySelector('.solve-count');
+            if (count) count.textContent = pluralize(solvesCount, 'solve');
+        }
+        const form = card.querySelector('.answer-form');
+        if (form) {
+            const status = document.createElement('div');
+            status.className = 'challenge-status challenge-status--success';
+            status.innerHTML = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="m4 10 4 4 8-9"/></svg><span></span>';
+            status.querySelector('span').textContent = 'Solved for ' + awardedPoints + ' points';
+            form.replaceWith(status);
+        }
+    }
+
+    document.querySelectorAll('.answer-form').forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            const button = form.querySelector('button[type="submit"]');
+            const input = form.querySelector('input[name="answer"]');
+            const formData = new FormData(form);
+            if (button) button.disabled = true;
+
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            }).then(function (response) {
+                if (!response.ok) throw new Error('Unexpected response');
+                return response.json();
+            }).then(function (data) {
+                showToast(data.message, STATUS_TAGS[data.status] || 'error');
+                if (input) input.value = '';
+                if (button) button.disabled = false;
+
+                if (data.challenge && data.challenge.requires_refresh) {
+                    window.setTimeout(function () { window.location.reload(); }, 600);
+                    return;
+                }
+                if (data.status === 'correct' || data.status === 'already_solved') {
+                    if (data.challenge) {
+                        markChallengeSolved(data.challenge.slug, data.challenge.awarded_points, data.challenge.solves_count);
+                    }
+                    if (data.leaderboard) renderLeaderboard(data.leaderboard);
+                }
+            }).catch(function () {
+                // Fall back to a normal form submission if the async path fails.
+                form.submit();
+            });
+        });
+    });
 
     const termsOverlay = document.querySelector('[data-terms-overlay]');
     if (termsOverlay) {

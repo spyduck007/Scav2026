@@ -57,7 +57,7 @@
                             {% if category.challenges %}
                                 <div class="challenge-grid">
                                     {% for challenge in category.challenges %}
-                                        <article class="challenge-card{% if challenge.user_has_solved %} challenge-card--solved{% elif not challenge.can_submit %} challenge-card--locked{% endif %}{% if challenge.is_exclusive %} challenge-card--exclusive{% endif %}{% if participant.is_admin %} challenge-card--admin{% endif %}">
+                                        <article class="challenge-card{% if challenge.user_has_solved %} challenge-card--solved{% elif not challenge.can_submit %} challenge-card--locked{% endif %}{% if challenge.is_exclusive %} challenge-card--exclusive{% endif %}{% if participant.is_admin %} challenge-card--admin{% endif %}" data-challenge-slug="{{ challenge.slug }}">
                                             {% if participant.is_admin %}
                                                 <div class="challenge-card__admin-actions" aria-label="Admin controls">
                                                     <form method="post" action="{{ challenge.move_left_url }}">{% csrf_token %}<button type="submit" class="icon-button icon-button--small"{% if not challenge.can_move_left %} disabled{% endif %} aria-label="Move {{ challenge.title }} left"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12 5-5 5 5 5"/></svg></button></form>
@@ -84,7 +84,7 @@
                                             <div class="challenge-card__footer">
                                                 <span class="solve-count">{{ challenge.solves_count }} solve{{ challenge.solves_count|pluralize }}</span>
                                                 {% if challenge.can_submit %}
-                                                    <form method="post" action="{% url 'core:submit_challenge' challenge.slug %}" class="answer-form">
+                                                    <form method="post" action="{% url 'core:submit_challenge' challenge.slug %}" class="answer-form" data-challenge-slug="{{ challenge.slug }}">
                                                         {% csrf_token %}
                                                         <label class="sr-only" for="answer-{{ challenge.slug }}">Answer for {{ challenge.title }}</label>
                                                         <input id="answer-{{ challenge.slug }}" name="answer" type="text" autocomplete="off" placeholder="Enter answer" required>
