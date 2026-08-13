@@ -1,0 +1,27 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} · {% endif %}SCAV Operations{% endblock %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/admin.css' %}">
+{% endblock %}
+
+{% block branding %}
+    <div class="scav-admin-brand">
+        <a href="{% url 'admin:index' %}"><span>SCAV</span><small>{{ HUNT_YEAR }}</small></a>
+        <strong>Operations console</strong>
+    </div>
+{% endblock %}
+
+{% block nav-global %}
+    <a class="scav-admin-return" href="{% url 'core:challenge' %}">Return to site ↗</a>
+{% endblock %}
+
+{% block welcome-msg %}
+    Signed in as <strong>{% firstof user.get_short_name user.get_username %}</strong>
+{% endblock %}

@@ -1,560 +1,148 @@
-{% load static markdown_extras %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Scavenger Hunt Challenges</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/core.css' %}">
-    <link rel="icon" href="{% static 'img/favicon.png' %}" type="image/png">
-</head>
-<body class="layout" data-countdown-target="{{ countdown_target }}" data-show-countdown="{{ show_countdown|yesno:'true,false' }}" data-participant-id="{{ participant.pk }}" data-is-admin="{{ participant.is_admin|yesno:'true,false' }}">
-    <script>
-    (function () {
-        const body = document.body;
-        const TERMS_STORAGE_PREFIX = 'scav-terms';
-        const participantId = body.dataset.participantId || 'anonymous';
-        const termsStorageKey = `${TERMS_STORAGE_PREFIX}:${participantId}`;
-        let hasAccepted = false;
+{% extends "core/base.html" %}
+{% load markdown_extras %}
 
-        try {
-            hasAccepted = localStorage.getItem(termsStorageKey) === 'true';
-        } catch (error) {
-            /* ignore storage errors */
-        }
+{% block title %}Challenges · SCAV {{ HUNT_YEAR }}{% endblock %}
+{% block body_class %}app-page challenge-page{% endblock %}
+{% block body_attributes %}data-participant-id="{{ participant.pk }}" data-is-admin="{{ participant.is_admin|yesno:'true,false' }}"{% endblock %}
 
-        if (!hasAccepted) {
-            try {
-                hasAccepted = sessionStorage.getItem(termsStorageKey) === 'true';
-            } catch (error) {
-                /* ignore storage errors */
-            }
-        }
-
-        if (hasAccepted) {
-            body.dataset.termsAccepted = 'true';
-            const overlay = document.querySelector('[data-terms-overlay]');
-            if (overlay) {
-                overlay.setAttribute('hidden', '');
-                overlay.dataset.skipAnimation = 'true';
-            }
-        }
-    })();
-    </script>
-    <div class="toast-container" data-toast-container aria-live="polite" aria-atomic="true"{% if not messages %} hidden{% endif %}>
-        {% if messages %}
-            {% for message in messages %}
-                <div class="toast toast--{{ message.tags|default:'info' }}" data-toast>
-                    <div class="toast__content">{{ message }}</div>
-                    <button type="button" class="toast__close" data-toast-close aria-label="Dismiss notification">&times;</button>
-                </div>
-            {% endfor %}
+{% block content %}
+<main id="main-content" class="page-shell page-shell--wide">
+    <header class="page-heading challenge-heading">
+        <div>
+            <p class="eyebrow">Live competition</p>
+            <h1>Challenge board</h1>
+            <p>{% if challenge_catalog.team_label %}Representing <strong>{{ challenge_catalog.team_label }}</strong>. Every accepted answer adds to your class score.{% else %}Your class assignment is pending. You can browse now and submit once a team is assigned.{% endif %}</p>
+        </div>
+        {% if show_countdown %}
+            <div class="countdown-block"><span>Time remaining</span><strong data-countdown="{{ countdown_target }}">Loading…</strong></div>
+        {% else %}
+            <div class="status-label"><span class="status-dot"></span>Hunt is open</div>
         {% endif %}
-    </div>
-    <div class="page page--challenge">
-        {% if ENABLE_SNOW_OVERLAY %}
-        <!-- TODO: Remove temporary snow effect overlay after the holiday event -->
-        <div class="snow-overlay" aria-hidden="true"></div>
-        {% endif %}
-        <header class="site-nav">
-            <div class="site-nav__inner">
-            <div class="site-nav__left">
-                <div class="logo" aria-hidden="true">
-                    <img src="{% static 'img/favicon.png' %}" alt="" class="logo__image">
-                </div>
-                <div class="site-nav__title">
-                    <span class="title-main">Scavenger Hunt</span>
-                    <span class="title-sub">{{ HUNT_YEAR }}</span>
-                </div>
-            </div>
-            <div class="site-nav__center">
-                {% if show_countdown %}
-                    <span id="countdown" class="countdown">Loading…</span>
-                {% else %}
-                    <span class="countdown countdown--inactive">Countdown unavailable</span>
-                {% endif %}
-            </div>
-            <div class="site-nav__right">
-                <button id="theme-toggle" class="icon-button" type="button" aria-label="Toggle theme">
-                    <span class="icon-button__icon" data-theme-icon aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="12" cy="12" r="4.5"></circle>
-                            <path d="M12 2v2"></path>
-                            <path d="M12 20v2"></path>
-                            <path d="M4.93 4.93l1.42 1.42"></path>
-                            <path d="M17.66 17.66l1.41 1.41"></path>
-                            <path d="M2 12h2"></path>
-                            <path d="M20 12h2"></path>
-                            <path d="M4.93 19.07l1.42-1.42"></path>
-                            <path d="M17.66 6.34l1.41-1.41"></path>
-                        </svg>
-                    </span>
-                </button>
-                <div class="profile-menu">
-                    <button class="profile-menu__trigger" type="button" aria-haspopup="true" aria-expanded="false">
-                        <span class="profile-menu__avatar">{{ participant.display_name|first|default:participant.ion_username|first|upper }}</span>
-                        <span class="profile-menu__label">{{ participant.display_name|default:participant.ion_username }}</span>
-                    </button>
-                    <div class="profile-menu__popover" role="menu">
-                        <p class="profile-menu__hint">Signed in as <strong>{{ participant.display_name|default:participant.ion_username }}</strong></p>
-                        <div class="profile-menu__actions">
-                            {% if participant.is_admin or participant.is_scavcomm %}
-                                <a href="{% url 'core:analytics' %}" class="profile-menu__button">Analytics</a>
-                            {% endif %}
-                            {% if participant.is_admin %}
-                                <a href="{% url 'admin:index' %}" class="profile-menu__button">Admin dashboard</a>
-                            {% endif %}
-                            <form method="post" action="{% url 'core:logout' %}" class="profile-menu__logout">
-                                {% csrf_token %}
-                                <button type="submit" class="profile-menu__button">Log out</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            </div>
-        </header>
+    </header>
 
-        <main class="challenge-layout">
+    <div class="competition-grid">
+        <aside class="surface standings-panel" aria-labelledby="standings-heading">
+            <div class="section-heading section-heading--compact">
+                <div><p class="eyebrow">Live score</p><h2 id="standings-heading">Standings</h2></div>
+                <span class="section-heading__hint">{{ leaderboard|length }} teams</span>
+            </div>
+            <ol class="ranking-list ranking-list--compact">
+                {% for entry in leaderboard %}
+                    <li class="ranking-row{% if entry.is_user_team %} ranking-row--current{% endif %}">
+                        <span class="ranking-row__rank">{{ entry.rank|stringformat:"02d" }}</span>
+                        <span class="ranking-row__team">{{ entry.label }}<small>{{ entry.member_count }} member{{ entry.member_count|pluralize }}</small></span>
+                        <strong>{{ entry.score }}</strong>
+                    </li>
+                {% endfor %}
+            </ol>
+        </aside>
 
-            <section class="panel leaderboard-panel">
-                <header class="panel__header">
-                    <h2>Leaderboard</h2>
-                    <span class="panel__hint">Scores update in realtime once the hunt begins.</span>
-                </header>
-                <div class="leaderboard-grid">
-                    {% for entry in leaderboard %}
-                        <article class="leaderboard-card{% if entry.is_user_team %} leaderboard-card--highlight{% endif %}">
-                            <header>
-                                <span class="leaderboard-rank">#{{ entry.rank }}</span>
-                                <span class="leaderboard-team">{{ entry.label }}</span>
+        <section class="challenge-board" aria-labelledby="challenges-heading">
+            <div class="surface board-toolbar">
+                <div><p class="eyebrow">Available objectives</p><h2 id="challenges-heading">Challenges</h2></div>
+                <div class="board-toolbar__meta">
+                    <span>{{ challenge_catalog.categories|length }} categor{{ challenge_catalog.categories|length|pluralize:"y,ies" }}</span>
+                    {% if participant.is_admin %}<span class="badge badge--danger">Admin controls enabled</span>{% endif %}
+                </div>
+            </div>
+
+            {% if challenge_catalog.categories %}
+                <div class="challenge-categories">
+                    {% for category in challenge_catalog.categories %}
+                        <section class="surface challenge-category" id="category-{{ category.slug }}">
+                            <header class="challenge-category__header">
+                                <div><p class="eyebrow">Category {{ forloop.counter|stringformat:"02d" }}</p><h3>{{ category.name }}</h3>{% if category.description %}<p>{{ category.description }}</p>{% endif %}</div>
+                                <span>{{ category.challenges|length }} challenge{{ category.challenges|length|pluralize }}</span>
                             </header>
-                            <div class="leaderboard-score">{{ entry.score }}</div>
-                            <footer>
-                                <span class="leaderboard-meta">Members: {{ entry.member_count }}</span>
-                                {% if entry.is_user_team %}<span class="leaderboard-meta leaderboard-meta--badge">Your team</span>{% endif %}
-                            </footer>
-                        </article>
+                            {% if category.challenges %}
+                                <div class="challenge-grid">
+                                    {% for challenge in category.challenges %}
+                                        <article class="challenge-card{% if challenge.user_has_solved %} challenge-card--solved{% elif not challenge.can_submit %} challenge-card--locked{% endif %}{% if challenge.is_exclusive %} challenge-card--exclusive{% endif %}{% if participant.is_admin %} challenge-card--admin{% endif %}">
+                                            {% if participant.is_admin %}
+                                                <div class="challenge-card__admin-actions" aria-label="Admin controls">
+                                                    <form method="post" action="{{ challenge.move_left_url }}">{% csrf_token %}<button type="submit" class="icon-button icon-button--small"{% if not challenge.can_move_left %} disabled{% endif %} aria-label="Move {{ challenge.title }} left"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12 5-5 5 5 5"/></svg></button></form>
+                                                    <a href="{{ challenge.admin_url }}" class="icon-button icon-button--small" target="_blank" rel="noopener" aria-label="Edit {{ challenge.title }} in admin"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m13.5 3.5 3 3L7 16H4v-3l9.5-9.5Z"/></svg></a>
+                                                    <form method="post" action="{{ challenge.move_right_url }}">{% csrf_token %}<button type="submit" class="icon-button icon-button--small"{% if not challenge.can_move_right %} disabled{% endif %} aria-label="Move {{ challenge.title }} right"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m8 5 5 5-5 5"/></svg></button></form>
+                                                </div>
+                                            {% endif %}
+                                            <header class="challenge-card__header">
+                                                <div>
+                                                    <div class="challenge-card__kicker"><span>{{ challenge.type_label }}</span>{% if challenge.is_exclusive %}<span>Exclusive</span>{% endif %}</div>
+                                                    <h4>{{ challenge.title }}</h4>
+                                                </div>
+                                                <strong class="challenge-card__points">{{ challenge.current_points }}<small>pts</small></strong>
+                                            </header>
+                                            <div class="challenge-card__description prose">{{ challenge.description|render_markdown }}</div>
+
+                                            {% if challenge.prerequisites %}
+                                                <div class="challenge-card__detail">
+                                                    <span class="challenge-card__detail-label">Prerequisites</span>
+                                                    <ul class="inline-list">{% for prereq in challenge.prerequisites %}<li class="{% if prereq.met %}is-complete{% endif %}">{{ prereq.title }}</li>{% endfor %}</ul>
+                                                </div>
+                                            {% endif %}
+
+                                            <div class="challenge-card__footer">
+                                                <span class="solve-count">{{ challenge.solves_count }} solve{{ challenge.solves_count|pluralize }}</span>
+                                                {% if challenge.can_submit %}
+                                                    <form method="post" action="{% url 'core:submit_challenge' challenge.slug %}" class="answer-form">
+                                                        {% csrf_token %}
+                                                        <label class="sr-only" for="answer-{{ challenge.slug }}">Answer for {{ challenge.title }}</label>
+                                                        <input id="answer-{{ challenge.slug }}" name="answer" type="text" autocomplete="off" placeholder="Enter answer" required>
+                                                        <button type="submit" class="button button--primary">Submit</button>
+                                                    </form>
+                                                {% else %}
+                                                    <div class="challenge-status {% if challenge.user_has_solved %}challenge-status--success{% endif %}">
+                                                        {% if challenge.user_has_solved %}<svg viewBox="0 0 20 20" aria-hidden="true"><path d="m4 10 4 4 8-9"/></svg><span>Solved for {{ challenge.current_points }} points</span>
+                                                        {% elif challenge.exclusive_locked %}<span>Claimed by another class</span>
+                                                        {% elif challenge.requires_dependencies and not challenge.prerequisites_met %}<span>Complete prerequisites to unlock</span>
+                                                        {% elif not challenge_catalog.team_year_valid %}<span>Team assignment required</span>
+                                                        {% else %}<span>Submission unavailable</span>{% endif %}
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+
+                                            {% if challenge.solves_summary %}
+                                                <details class="solve-history"><summary>View solve history</summary><ul>{% for entry in challenge.solves_summary %}<li{% if entry.by_user_team %} class="is-current"{% endif %}><span>Class of {{ entry.team_year }}</span><strong>{{ entry.awarded_points }} pts</strong></li>{% endfor %}</ul></details>
+                                            {% endif %}
+                                        </article>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="empty-state"><strong>No challenges published</strong><span>This category is ready for organizers to add objectives.</span></div>
+                            {% endif %}
+                        </section>
                     {% endfor %}
                 </div>
-            </section>
-
-            <section class="panel challenge-panel">
-                <header class="panel__header">
-                    <h2>Challenge Board</h2>
-                    {% if challenge_catalog.team_label %}
-                        <span class="panel__hint">You’re representing <strong>{{ challenge_catalog.team_label }}</strong>. Submit solves to earn points for your class.</span>
-                    {% else %}
-                        <span class="panel__hint">Once your class year is assigned you can begin submitting answers.</span>
-                    {% endif %}
-                </header>
-                {% if challenge_catalog.categories %}
-                    <div class="challenge-categories">
-                        {% for category in challenge_catalog.categories %}
-                            <section class="challenge-category" id="category-{{ category.slug }}">
-                                <header class="challenge-category__header">
-                                    <h3>{{ category.name }}</h3>
-                                    {% if category.description %}
-                                        <p class="challenge-category__description">{{ category.description }}</p>
-                                    {% endif %}
-                                </header>
-                                {% if category.challenges %}
-                                    <div class="challenge-grid">
-                                        {% for challenge in category.challenges %}
-                                            {% with challenge.challenge_type as type_key %}
-                                                <article class="challenge-card{% if not challenge.can_submit %} challenge-card--locked{% endif %}{% if challenge.user_has_solved %} challenge-card--solved{% endif %}{% if challenge.is_exclusive %} challenge-card--exclusive{% endif %}{% if participant.is_admin %} challenge-card--admin{% endif %}" data-challenge-type="{{ type_key }}"{% if participant.is_admin %} data-admin-card="true" data-admin-url="{{ challenge.admin_url }}"{% endif %}>
-                                                    {% if participant.is_admin %}
-                                                        <div class="challenge-card__admin-actions" aria-label="Admin controls" data-admin-action="true">
-                                                            <form method="post" action="{{ challenge.move_left_url }}" class="challenge-card__admin-form" data-admin-action="true">
-                                                                {% csrf_token %}
-                                                                <button type="submit" class="challenge-card__admin-button" data-admin-action="true" {% if not challenge.can_move_left %}disabled aria-disabled="true"{% endif %}>
-                                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                                                        <polyline points="15 18 9 12 15 6"></polyline>
-                                                                    </svg>
-                                                                    <span class="sr-only">Move left</span>
-                                                                </button>
-                                                            </form>
-                                                            <a href="{{ challenge.admin_url }}" class="challenge-card__admin-link" target="_blank" rel="noopener" data-admin-action="true">
-                                                                <span aria-hidden="true">✎</span>
-                                                                <span class="sr-only">Edit in admin</span>
-                                                            </a>
-                                                            <form method="post" action="{{ challenge.move_right_url }}" class="challenge-card__admin-form" data-admin-action="true">
-                                                                {% csrf_token %}
-                                                                <button type="submit" class="challenge-card__admin-button" data-admin-action="true" {% if not challenge.can_move_right %}disabled aria-disabled="true"{% endif %}>
-                                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                                                        <polyline points="9 6 15 12 9 18"></polyline>
-                                                                    </svg>
-                                                                    <span class="sr-only">Move right</span>
-                                                                </button>
-                                                            </form>
-                                                        </div>
-                                                    {% endif %}
-                                                    <header class="challenge-card__header">
-                                                        <div>
-                                                            <h4>{{ challenge.title }}</h4>
-                                                            <div class="challenge-card__meta">
-                                                                <span class="challenge-card__badge challenge-card__badge--{{ type_key }}">{{ challenge.type_label }}</span>
-                                                                <span class="challenge-card__points">{{ challenge.current_points }} pts</span>
-                                                            </div>
-                                                        </div>
-                                                    </header>
-                                                    <div class="challenge-card__description">{{ challenge.description|render_markdown }}</div>
-
-                                                    {% if challenge.prerequisites %}
-                                                        <div class="challenge-card__prereqs">
-                                                            <p class="challenge-card__prereqs-label">Required before attempting:</p>
-                                                            <ul>
-                                                                {% for prereq in challenge.prerequisites %}
-                                                                    <li class="{% if prereq.met %}challenge-card__prereq--met{% else %}challenge-card__prereq--unmet{% endif %}">
-                                                                        {{ prereq.title }}
-                                                                    </li>
-                                                                {% endfor %}
-                                                            </ul>
-                                                        </div>
-                                                    {% endif %}
-
-                                                    {% if challenge.solves_summary %}
-                                                        <div class="challenge-card__solves">
-                                                            <p class="challenge-card__solves-label">Recent solves:</p>
-                                                            <ul>
-                                                                {% for entry in challenge.solves_summary %}
-                                                                    <li class="{% if entry.by_user_team %}challenge-card__solve--team{% endif %}">Class of {{ entry.team_year }} · {{ entry.awarded_points }} pts</li>
-                                                                {% endfor %}
-                                                            </ul>
-                                                        </div>
-                                                    {% endif %}
-
-                                                    <div class="challenge-card__actions">
-                                                        {% if challenge.can_submit %}
-                                                            <form method="post" action="{% url 'core:submit_challenge' challenge.slug %}" class="challenge-card__form">
-                                                                {% csrf_token %}
-                                                                <label class="challenge-card__form-label" for="answer-{{ challenge.slug }}">Your answer</label>
-                                                                <div class="challenge-card__form-row">
-                                                                    <input id="answer-{{ challenge.slug }}" name="answer" class="challenge-card__input" type="text" autocomplete="off" required>
-                                                                    <button type="submit" class="challenge-card__submit">Submit</button>
-                                                                </div>
-                                                            </form>
-                                                        {% else %}
-                                                            <div class="challenge-card__status">
-                                                                {% if challenge.user_has_solved %}
-                                                                    <p class="challenge-card__status-line">Already solved by your class for {{ challenge.current_points }} pts.</p>
-                                                                {% elif challenge.exclusive_locked %}
-                                                                    <p class="challenge-card__status-line">This exclusive challenge has already been claimed.</p>
-                                                                {% elif challenge.requires_dependencies and not challenge.prerequisites_met %}
-                                                                    <p class="challenge-card__status-line">Solve all prerequisites in this category to unlock.</p>
-                                                                {% elif not challenge_catalog.team_year_valid %}
-                                                                    <p class="challenge-card__status-line">Assignments pending — you’ll be able to attempt once a class year is set.</p>
-                                                                {% else %}
-                                                                    <p class="challenge-card__status-line">Unable to submit at this time.</p>
-                                                                {% endif %}
-                                                            </div>
-                                                        {% endif %}
-                                                    </div>
-                                                </article>
-                                            {% endwith %}
-                                        {% endfor %}
-                                    </div>
-                                {% else %}
-                                    <p class="challenge-category__empty">No challenges have been published for this category yet.</p>
-                                {% endif %}
-                            </section>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="challenge-placeholder">
-                        <h3>Challenges coming soon</h3>
-                        <p>The scavenger hunt runs {% if hunt_starts_at %}from <strong>{{ hunt_starts_at }}</strong>{% endif %}{% if hunt_ends_at %} to <strong>{{ hunt_ends_at }}</strong>{% endif %}. Organizers will publish categories and challenges here once they are ready.</p>
-                    </div>
-                {% endif %}
-            </section>
-        </main>
-
-        <footer class="footer">
-            <p>&copy; SCAV {{ HUNT_YEAR }} · Crafted by students for students</p>
-        </footer>
-
-        <div class="modal-overlay" data-terms-overlay hidden>
-            <div class="terms-modal" role="dialog" aria-modal="true" aria-labelledby="terms-modal-title">
-                <header class="terms-modal__header">
-                    <h2 id="terms-modal-title">Scavenger Hunt Terms &amp; Conditions</h2>
-                    <p class="terms-modal__intro">Please review the draft rules below. You must scroll to the end and acknowledge before continuing.</p>
-                </header>
-                <div class="terms-modal__content" data-terms-content tabindex="0">
-                    <p><strong>Welcome!</strong> This scavenger hunt is designed to celebrate collaboration, creativity, and campus spirit. By participating you agree to follow the guidelines below.</p>
-                    <ol>
-                        <li>Respect classmates, staff, and the school environment at all times. The hunt should be fun and inclusive for everyone involved.</li>
-                        <li>Complete objectives safely. Do not run in restricted areas, tamper with equipment, or break any local school rules.</li>
-                        <li>Submit discoveries honestly. Teams should only report progress that they personally accomplished.</li>
-                        <li>Use good judgment when sharing photos or videos. Obtain consent before posting media of others.</li>
-                        <li>Report issues immediately. If you notice unsafe behavior or suspect cheating, contact an organizer.</li>
-                        <li>Remember this document is a placeholder. Official rules will replace this copy before launch.</li>
-                    </ol>
-                    <p>Continuing indicates that you understand these expectations and agree to honor the final terms set by the organizers.</p>
-                </div>
-                <footer class="terms-modal__footer">
-                    <p class="terms-modal__helper" data-terms-helper>Scroll to the bottom to enable the acknowledgement button.</p>
-                    <button type="button" class="terms-modal__button" data-terms-accept disabled>I acknowledge the terms</button>
-                </footer>
-            </div>
-        </div>
+            {% else %}
+                <div class="surface empty-state empty-state--large"><span class="empty-state__icon" aria-hidden="true">+</span><strong>Challenges are being prepared</strong><span>Organizers will publish the first category here when it is ready.</span></div>
+            {% endif %}
+        </section>
     </div>
+</main>
 
-    <script>
-    (function () {
-        const STORAGE_KEY = "scav-theme";
-        const body = document.body;
-
-        const THEME_ICONS = {
-            light: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="M4.93 4.93l1.42 1.42"></path><path d="M17.66 17.66l1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="M4.93 19.07l1.42-1.42"></path><path d="M17.66 6.34l1.41-1.41"></path></svg>`,
-            dark: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79Z"></path></svg>`
-        };
-
-        function applyTheme(theme) {
-            body.dataset.theme = theme;
-            const icon = document.querySelector('[data-theme-icon]');
-            if (icon) {
-                icon.innerHTML = theme === 'dark' ? THEME_ICONS.dark : THEME_ICONS.light;
-            }
-        }
-
-        {% if ENABLE_SNOW_OVERLAY %}
-        const SNOWFLAKE_COUNT = 80;
-        const snowOverlay = document.querySelector('.snow-overlay');
-        if (snowOverlay) {
-            for (let index = 0; index < SNOWFLAKE_COUNT; index += 1) {
-                const flake = document.createElement('span');
-                flake.className = 'snowflake';
-                const size = (Math.random() * 4) + 2;
-                const duration = (Math.random() * 8) + 8;
-                const delay = Math.random() * 8;
-                const opacity = Math.random() * 0.5 + 0.4;
-                const drift = (Math.random() * 2 - 1) * 4;
-                const xPosition = Math.random() * 100;
-                flake.style.setProperty('--size', `${size}px`);
-                flake.style.setProperty('--duration', `${duration}s`);
-                flake.style.setProperty('--delay', `${delay}s`);
-                flake.style.setProperty('--opacity', opacity.toFixed(2));
-                flake.style.setProperty('--drift', `${drift.toFixed(2)}rem`);
-                flake.style.setProperty('--x-position', `${xPosition.toFixed(2)}%`);
-                snowOverlay.appendChild(flake);
-            }
-        }
-        {% endif %}
-
-        const savedTheme = localStorage.getItem(STORAGE_KEY);
-        if (savedTheme) {
-            applyTheme(savedTheme);
-        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            applyTheme('dark');
-        } else {
-            applyTheme('light');
-        }
-
-        const toggle = document.getElementById('theme-toggle');
-        if (toggle) {
-            toggle.addEventListener('click', () => {
-                const next = body.dataset.theme === 'dark' ? 'light' : 'dark';
-                applyTheme(next);
-                localStorage.setItem(STORAGE_KEY, next);
-            });
-        }
-
-        const countdownEl = document.getElementById('countdown');
-        const showCountdown = body.dataset.showCountdown === 'true';
-        const targetIso = body.dataset.countdownTarget;
-
-        if (showCountdown && countdownEl && targetIso) {
-            const targetDate = new Date(targetIso);
-            const formatter = new Intl.RelativeTimeFormat(undefined, { numeric: 'always' });
-
-            function pad(value) {
-                return String(value).padStart(2, '0');
-            }
-
-            function updateCountdown() {
-                const now = new Date();
-                const diff = targetDate.getTime() - now.getTime();
-                if (diff <= 0) {
-                    countdownEl.textContent = 'The hunt has ended';
-                    return;
-                }
-
-                const totalSeconds = Math.floor(diff / 1000);
-                const days = Math.floor(totalSeconds / 86400);
-                const hours = Math.floor((totalSeconds % 86400) / 3600);
-                const minutes = Math.floor((totalSeconds % 3600) / 60);
-                const seconds = totalSeconds % 60;
-
-                const parts = [];
-                if (days) {
-                    parts.push(formatter.format(days, 'day'));
-                }
-                parts.push(`${pad(hours)}:${pad(minutes)}:${pad(seconds)}`);
-                countdownEl.textContent = parts.join(' · ');
-            }
-
-            updateCountdown();
-            setInterval(updateCountdown, 1000);
-        }
-
-        const profileTrigger = document.querySelector('.profile-menu__trigger');
-        const profilePopover = document.querySelector('.profile-menu__popover');
-        if (profileTrigger && profilePopover) {
-            profileTrigger.addEventListener('click', () => {
-                const expanded = profileTrigger.getAttribute('aria-expanded') === 'true';
-                profileTrigger.setAttribute('aria-expanded', String(!expanded));
-                profilePopover.toggleAttribute('data-open');
-            });
-
-            document.addEventListener('click', (event) => {
-                if (!profilePopover.contains(event.target) && !profileTrigger.contains(event.target)) {
-                    profileTrigger.setAttribute('aria-expanded', 'false');
-                    profilePopover.removeAttribute('data-open');
-                }
-            });
-        }
-
-        const TERMS_STORAGE_PREFIX = 'scav-terms';
-        const participantId = body.dataset.participantId || 'anonymous';
-        const termsStorageKey = `${TERMS_STORAGE_PREFIX}:${participantId}`;
-        let inMemoryTermsAcceptance = false;
-
-        const readTermsAcceptance = () => {
-            try {
-                if (localStorage.getItem(termsStorageKey) === 'true') {
-                    return true;
-                }
-            } catch (error) {
-                /* ignore storage errors */
-            }
-
-            try {
-                if (sessionStorage.getItem(termsStorageKey) === 'true') {
-                    return true;
-                }
-            } catch (error) {
-                /* ignore storage errors */
-            }
-
-            return inMemoryTermsAcceptance;
-        };
-
-        const persistTermsAcceptance = () => {
-            let stored = false;
-
-            try {
-                localStorage.setItem(termsStorageKey, 'true');
-                stored = true;
-            } catch (error) {
-                /* ignore storage errors */
-            }
-
-            if (!stored) {
-                try {
-                    sessionStorage.setItem(termsStorageKey, 'true');
-                    stored = true;
-                } catch (error) {
-                    /* ignore storage errors */
-                }
-            }
-
-            if (!stored) {
-                inMemoryTermsAcceptance = true;
-            }
-        };
-        const termsOverlay = document.querySelector('[data-terms-overlay]');
-        const termsContent = termsOverlay?.querySelector('[data-terms-content]');
-        const termsAccept = termsOverlay?.querySelector('[data-terms-accept]');
-        const termsHelper = termsOverlay?.querySelector('[data-terms-helper]');
-
-        const hideTermsOverlay = () => {
-            if (!termsOverlay) {
-                return;
-            }
-            termsOverlay.hidden = true;
-            document.body.style.overflow = '';
-            window.setTimeout(() => {
-                if (termsOverlay.parentElement) {
-                    termsOverlay.remove();
-                }
-            }, 150);
-        };
-
-        const showTermsOverlay = () => {
-            if (!termsOverlay) {
-                return;
-            }
-            termsOverlay.hidden = false;
-            document.body.style.overflow = 'hidden';
-        };
-
-        if (termsOverlay && termsContent && termsAccept && termsHelper) {
-            const hasAcceptedTerms = readTermsAcceptance();
-
-            if (hasAcceptedTerms) {
-                hideTermsOverlay();
-            } else {
-                showTermsOverlay();
-                termsContent.scrollTop = 0;
-
-                const maybeEnableButton = () => {
-                    const nearBottom =
-                        termsContent.scrollTop + termsContent.clientHeight >= termsContent.scrollHeight - 4;
-                    if (nearBottom) {
-                        if (termsAccept.disabled) {
-                            termsHelper.textContent = 'You can now acknowledge the rules to continue.';
-                            termsAccept.disabled = false;
-                        }
-                    }
-                };
-
-                const requiresScroll = termsContent.scrollHeight > termsContent.clientHeight + 4;
-                if (!requiresScroll) {
-                    termsHelper.textContent = 'Review the rules and acknowledge to begin.';
-                    termsAccept.disabled = false;
-                } else {
-                    termsContent.addEventListener('scroll', maybeEnableButton, { passive: true });
-                }
-
-                termsAccept.addEventListener('click', () => {
-                    persistTermsAcceptance();
-                    hideTermsOverlay();
-                });
-
-                // Run once in case the content is already at the bottom due to small scroll height.
-                maybeEnableButton();
-            }
-        }
-
-        const toastContainer = document.querySelector('[data-toast-container]');
-        if (toastContainer) {
-            const dismissToast = (toast, delay = 0) => {
-                if (!toast) {
-                    return;
-                }
-                window.setTimeout(() => {
-                    toast.classList.add('toast--closing');
-                    window.setTimeout(() => {
-                        toast.remove();
-                        if (!toastContainer.querySelector('[data-toast]')) {
-                            toastContainer.hidden = true;
-                        }
-                    }, 200);
-                }, delay);
-            };
-
-            toastContainer.querySelectorAll('[data-toast]').forEach((toast, index) => {
-                dismissToast(toast, 3500 + index * 500);
-                const closeButton = toast.querySelector('[data-toast-close]');
-                if (closeButton) {
-                    closeButton.addEventListener('click', () => dismissToast(toast));
-                }
-            });
-        }
-    })();
-    </script>
-</body>
-</html>
+<div class="modal-overlay" data-terms-overlay hidden>
+    <div class="terms-modal" role="dialog" aria-modal="true" aria-labelledby="terms-modal-title" aria-describedby="terms-modal-description">
+        <header class="terms-modal__header">
+            <p class="eyebrow">Required acknowledgement</p>
+            <h2 id="terms-modal-title">Scavenger Hunt terms &amp; conditions</h2>
+            <p id="terms-modal-description">Read the rules in full before entering the challenge board.</p>
+        </header>
+        <div class="terms-modal__content prose" data-terms-content tabindex="0">
+            <p><strong>Welcome!</strong> This scavenger hunt is designed to celebrate collaboration, creativity, and campus spirit. By participating you agree to follow the guidelines below.</p>
+            <ol>
+                <li>Respect classmates, staff, and the school environment at all times. The hunt should be fun and inclusive for everyone involved.</li>
+                <li>Complete objectives safely. Do not run in restricted areas, tamper with equipment, or break any local school rules.</li>
+                <li>Submit discoveries honestly. Teams should only report progress that they personally accomplished.</li>
+                <li>Use good judgment when sharing photos or videos. Obtain consent before posting media of others.</li>
+                <li>Report issues immediately. If you notice unsafe behavior or suspect cheating, contact an organizer.</li>
+                <li>Remember this document is a placeholder. Official rules will replace this copy before launch.</li>
+            </ol>
+            <p>Continuing indicates that you understand these expectations and agree to honor the final terms set by the organizers.</p>
+        </div>
+        <footer class="terms-modal__footer">
+            <p data-terms-helper>Scroll to the bottom to enable acknowledgement.</p>
+            <button type="button" class="button button--primary" data-terms-accept disabled>I acknowledge the terms</button>
+        </footer>
+    </div>
+</div>
+{% endblock %}

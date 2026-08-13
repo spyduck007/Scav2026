@@ -1,0 +1,61 @@
+{% load static %}
+<header class="site-header">
+    <div class="site-header__inner">
+        <a class="site-brand" href="{% url 'core:challenge' %}" aria-label="Scavenger Hunt challenge board">
+            <span class="site-brand__mark" aria-hidden="true">
+                <img src="{% static 'img/favicon.png' %}" alt="">
+            </span>
+            <span class="site-brand__name">SCAV</span>
+            <span class="site-brand__year">{{ HUNT_YEAR }}</span>
+        </a>
+
+        <nav class="primary-nav" aria-label="Primary navigation">
+            <a href="{% url 'core:challenge' %}"{% if request.resolver_match.url_name == 'challenge' %} aria-current="page"{% endif %}>Challenges</a>
+            <a href="{% url 'core:dashboard' %}"{% if request.resolver_match.url_name == 'dashboard' %} aria-current="page"{% endif %}>Profile</a>
+            {% if participant.is_admin or participant.is_scavcomm %}
+                <a href="{% url 'core:analytics' %}"{% if request.resolver_match.url_name == 'analytics' or request.resolver_match.url_name == 'submission_detail' or request.resolver_match.url_name == 'user_detail' or request.resolver_match.url_name == 'challenge_detail' %} aria-current="page"{% endif %}>Analytics</a>
+            {% endif %}
+            {% if participant.is_admin %}
+                <a href="{% url 'admin:index' %}">Admin</a>
+            {% endif %}
+        </nav>
+
+        <div class="site-header__actions">
+            <button id="theme-toggle" class="icon-button" type="button" aria-label="Toggle color theme" aria-pressed="false">
+                <svg class="theme-icon theme-icon--sun" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"/>
+                </svg>
+                <svg class="theme-icon theme-icon--moon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"/>
+                </svg>
+            </button>
+
+            <div class="profile-menu">
+                <button class="profile-menu__trigger" type="button" aria-haspopup="menu" aria-expanded="false">
+                    <span class="profile-menu__avatar" aria-hidden="true">{{ participant.display_name|first|default:participant.ion_username|first|upper }}</span>
+                    <span class="profile-menu__identity">
+                        <span class="profile-menu__name">{{ participant.display_name|default:participant.ion_username }}</span>
+                        <span class="profile-menu__role">{% if participant.is_admin %}Administrator{% elif participant.is_scavcomm %}Scavcomm{% elif participant.graduation_year %}Class of {{ participant.graduation_year }}{% else %}Participant{% endif %}</span>
+                    </span>
+                    <svg class="profile-menu__chevron" viewBox="0 0 20 20" aria-hidden="true"><path d="m6 8 4 4 4-4"/></svg>
+                </button>
+                <div class="profile-menu__popover" role="menu" aria-label="Account menu">
+                    <div class="profile-menu__summary">
+                        <span class="eyebrow">Signed in as</span>
+                        <strong>{{ participant.ion_username }}</strong>
+                    </div>
+                    <div class="profile-menu__actions">
+                        <a href="{% url 'core:dashboard' %}" role="menuitem">Profile</a>
+                        <a href="{% url 'core:challenge' %}" role="menuitem">Challenge board</a>
+                        {% if participant.is_admin or participant.is_scavcomm %}<a href="{% url 'core:analytics' %}" role="menuitem">Analytics</a>{% endif %}
+                        {% if participant.is_admin %}<a href="{% url 'admin:index' %}" role="menuitem">Django admin <span aria-hidden="true">↗</span></a>{% endif %}
+                    </div>
+                    <form method="post" action="{% url 'core:logout' %}" class="profile-menu__logout">
+                        {% csrf_token %}
+                        <button type="submit" role="menuitem">Log out</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>

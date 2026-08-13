@@ -1,0 +1,52 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark light">
+    <title>{% block title %}Scavenger Hunt{% endblock %}</title>
+    <link rel="icon" href="{% static 'img/favicon.png' %}" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/core.css' %}">
+    <script>
+        (function () {
+            var theme = 'dark';
+            try {
+                theme = localStorage.getItem('scav-theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+            } catch (error) {}
+            document.documentElement.dataset.theme = theme;
+        })();
+    </script>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="site-body {% block body_class %}{% endblock %}" {% block body_attributes %}{% endblock %}>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    {% if ENABLE_SNOW_OVERLAY %}
+        <!-- TODO: Remove temporary snow effect overlay after the holiday event. -->
+        <div class="snow-overlay" aria-hidden="true"></div>
+    {% endif %}
+
+    {% include "core/includes/toasts.html" %}
+
+    <div class="site-frame">
+        {% if participant %}
+            {% include "core/includes/site_header.html" %}
+        {% endif %}
+
+        {% block content %}{% endblock %}
+
+        <footer class="site-footer">
+            <span>SCAV {{ HUNT_YEAR }}</span>
+            <span class="site-footer__separator" aria-hidden="true">/</span>
+            <span>Built by students, for students</span>
+        </footer>
+    </div>
+
+    <script src="{% static 'js/core.js' %}" defer></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

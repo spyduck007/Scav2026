@@ -1,0 +1,11 @@
+<div class="toast-region" data-toast-container aria-live="polite" aria-atomic="true"{% if not messages %} hidden{% endif %}>
+    {% for message in messages %}
+        <div class="toast toast--{{ message.tags|default:'info' }}" data-toast role="status">
+            <span class="toast__indicator" aria-hidden="true"></span>
+            <div class="toast__content">{{ message }}</div>
+            <button type="button" class="toast__close" data-toast-close aria-label="Dismiss notification">
+                <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15"/></svg>
+            </button>
+        </div>
+    {% endfor %}
+</div>

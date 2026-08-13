@@ -1,50 +1,47 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Scavenger Hunt</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/core.css' %}">
-</head>
-<body>
-    <div class="page">
-        <header class="brand">
-            <span class="mark">SCAV</span>
-            <span class="accent">{{ HUNT_YEAR }}</span>
-        </header>
-        <main class="card">
-            <section class="card__header">
-                <h1>Hi {{ participant.display_name|default:participant.ion_username }}</h1>
-                <p>You're signed in with your Ion account. We'll use this space to brief you on the hunt once challenges open.</p>
-            </section>
-            <section class="card__content">
-                <div class="detail-grid">
-                    <div>
-                        <span class="label">Ion username</span>
-                        <p>{{ participant.ion_username }}</p>
-                    </div>
-                    <div>
-                        <span class="label">Email</span>
-                        <p>{{ participant.email|default:"—" }}</p>
-                    </div>
-                    <div>
-                        <span class="label">Graduation year</span>
-                        <p>{{ participant.graduation_year|default:"—" }}</p>
-                    </div>
-                    <div>
-                        <span class="label">Admin access</span>
-                        <p>{% if participant.is_admin %}Yes{% else %}No{% endif %}</p>
-                    </div>
-                </div>
-            </section>
-        </main>
-        <footer class="footer">
-            <p>&copy; SCAV {{ HUNT_YEAR }} · Crafted by students for students</p>
-        </footer>
-    </div>
-</body>
-</html>
+{% extends "core/base.html" %}
+
+{% block title %}Profile · SCAV {{ HUNT_YEAR }}{% endblock %}
+{% block body_class %}app-page{% endblock %}
+{% block body_attributes %}data-participant-id="{{ participant.pk }}"{% endblock %}
+
+{% block content %}
+<main id="main-content" class="page-shell page-shell--narrow">
+    <header class="page-heading">
+        <div>
+            <p class="eyebrow">Participant profile</p>
+            <h1>{{ participant.display_name|default:participant.ion_username }}</h1>
+            <p>Your Scavenger Hunt identity and team assignment are synced from Ion.</p>
+        </div>
+        <a class="button button--primary" href="{% url 'core:challenge' %}">Open challenge board</a>
+    </header>
+
+    <section class="surface profile-overview">
+        <div class="profile-overview__identity">
+            <span class="profile-overview__avatar" aria-hidden="true">{{ participant.display_name|first|default:participant.ion_username|first|upper }}</span>
+            <div>
+                <span class="eyebrow">Signed in</span>
+                <h2>{{ participant.display_name|default:participant.ion_username }}</h2>
+                <p>@{{ participant.ion_username }}</p>
+            </div>
+        </div>
+        <div class="profile-overview__badges">
+            {% if participant.is_admin %}<span class="badge badge--danger">Administrator</span>{% endif %}
+            {% if participant.is_scavcomm %}<span class="badge badge--info">Scavcomm</span>{% endif %}
+            {% if participant.graduation_year %}<span class="badge badge--success">Class of {{ participant.graduation_year }}</span>{% else %}<span class="badge">Team pending</span>{% endif %}
+        </div>
+    </section>
+
+    <section class="surface section-block" aria-labelledby="account-heading">
+        <div class="section-heading">
+            <div><p class="eyebrow">Account</p><h2 id="account-heading">Participant details</h2></div>
+            <span class="section-heading__hint">Managed through Ion</span>
+        </div>
+        <dl class="definition-grid">
+            <div><dt>Ion username</dt><dd>{{ participant.ion_username }}</dd></div>
+            <div><dt>Email</dt><dd>{{ participant.email|default:"Not provided" }}</dd></div>
+            <div><dt>Graduation year</dt><dd>{{ participant.graduation_year|default:"Not assigned" }}</dd></div>
+            <div><dt>Role</dt><dd>{% if participant.is_admin %}Administrator{% elif participant.is_scavcomm %}Scavcomm{% else %}Participant{% endif %}</dd></div>
+        </dl>
+    </section>
+</main>
+{% endblock %}

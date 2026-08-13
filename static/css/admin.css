@@ -1,0 +1,150 @@
+:root, html[data-theme="light"] {
+    --primary: #086ca3;
+    --secondary: #171717;
+    --accent: #086ca3;
+    --primary-fg: #fff;
+    --body-fg: #272727;
+    --body-bg: #f8f8f7;
+    --body-quiet-color: #707070;
+    --body-loud-color: #111;
+    --header-color: #eee;
+    --header-branding-color: #eee;
+    --header-bg: #111;
+    --header-link-color: #d2d2d2;
+    --breadcrumbs-fg: #777;
+    --breadcrumbs-link-fg: #086ca3;
+    --breadcrumbs-bg: #f1f1ef;
+    --link-fg: #086ca3;
+    --link-hover-color: #075c8b;
+    --link-selected-fg: #075c8b;
+    --hairline-color: #ddddda;
+    --border-color: #cececa;
+    --error-fg: #b72d3d;
+    --message-success-bg: #dff6e9;
+    --message-warning-bg: #fff0c7;
+    --message-error-bg: #ffe5e8;
+    --darkened-bg: #f1f1ef;
+    --selected-bg: #dff2fc;
+    --selected-row: #eaf7fd;
+    --button-fg: #fff;
+    --button-bg: #086ca3;
+    --button-hover-bg: #075c8b;
+    --default-button-bg: #086ca3;
+    --default-button-hover-bg: #075c8b;
+    --close-button-bg: #4a4a4a;
+    --close-button-hover-bg: #333;
+    --delete-button-bg: #b72d3d;
+    --delete-button-hover-bg: #982331;
+    --object-tools-fg: #fff;
+    --object-tools-bg: #272727;
+    --object-tools-hover-bg: #111;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --primary: #76c7f0;
+        --secondary: #191919;
+        --accent: #76c7f0;
+        --primary-fg: #07141a;
+        --body-fg: #eee;
+        --body-bg: #111;
+        --body-quiet-color: #929292;
+        --body-loud-color: #fff;
+        --header-color: #eee;
+        --header-branding-color: #eee;
+        --header-bg: #111;
+        --header-link-color: #c8c8c8;
+        --breadcrumbs-fg: #858585;
+        --breadcrumbs-link-fg: #76c7f0;
+        --breadcrumbs-bg: #151515;
+        --link-fg: #76c7f0;
+        --link-hover-color: #9dd7f4;
+        --link-selected-fg: #9dd7f4;
+        --hairline-color: #333;
+        --border-color: #444;
+        --error-fg: #ff8b8b;
+        --message-success-bg: #123c2b;
+        --message-warning-bg: #463514;
+        --message-error-bg: #4b1d22;
+        --darkened-bg: #191919;
+        --selected-bg: #113654;
+        --selected-row: #172d3c;
+        --button-fg: #07141a;
+        --button-bg: #76c7f0;
+        --button-hover-bg: #9dd7f4;
+        --default-button-bg: #76c7f0;
+        --default-button-hover-bg: #9dd7f4;
+        --close-button-bg: #333;
+        --close-button-hover-bg: #444;
+        --delete-button-bg: #b94854;
+        --delete-button-hover-bg: #d35a66;
+        --object-tools-fg: #eee;
+        --object-tools-bg: #2a2a2a;
+        --object-tools-hover-bg: #333;
+    }
+}
+
+html { background: var(--body-bg); }
+body, input, textarea, select, .form-row p, form .button { font-family: "Inter", system-ui, sans-serif; }
+body { font-size: 14px; }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#header { min-height: 72px; padding: 0 24px; display: flex; align-items: center; border-bottom: 1px solid #333; }
+#branding { flex: 1 1 auto; }
+.scav-admin-brand { display: flex; align-items: center; gap: 20px; }
+.scav-admin-brand a { display: flex; align-items: center; gap: 9px; color: var(--header-color); text-decoration: none; }
+.scav-admin-brand a span { font-size: 14px; font-weight: 700; letter-spacing: .13em; }
+.scav-admin-brand a small { padding-left: 9px; border-left: 1px solid #444; color: #929292; font-family: "JetBrains Mono", monospace; font-size: 11px; }
+.scav-admin-brand strong { color: #929292; font-size: 11px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; }
+.scav-admin-return { margin-right: 18px; color: #b8b8b8 !important; font-size: 12px; text-decoration: none; }
+#user-tools { padding: 0; font-size: 11px; letter-spacing: 0; text-transform: none; }
+div.breadcrumbs { min-height: 42px; padding: 0 24px; display: flex; align-items: center; border-bottom: 1px solid var(--hairline-color); font-size: 12px; }
+#content { max-width: 1440px; margin: 0 auto; padding: 32px 24px; }
+#content h1 { margin: 0 0 24px; font-size: clamp(25px, 4vw, 38px); font-weight: 600; letter-spacing: -.035em; }
+#content h2 { font-weight: 600; letter-spacing: -.02em; }
+.module, .inline-group { overflow: hidden; border: 1px solid var(--border-color); border-radius: 7px; background: var(--darkened-bg); }
+.module h2, .module caption, .inline-group h2 { padding: 11px 14px; background: var(--darkened-bg); color: var(--body-fg); font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.module table { border-collapse: collapse; }
+.dashboard .module table th, .dashboard .module table td { padding: 11px 14px; }
+.dashboard .module table tr + tr { border-top: 1px solid var(--hairline-color); }
+#content-main .module + .module { margin-top: 16px; }
+.object-tools { margin-top: -52px; }
+.object-tools a { min-height: 36px; display: inline-flex; align-items: center; border-radius: 4px; font-size: 11px; font-weight: 600; letter-spacing: 0; text-transform: none; }
+input[type="text"], input[type="password"], input[type="email"], input[type="url"], input[type="number"], textarea, select, .vTextField { min-height: 40px; padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--body-bg); color: var(--body-fg); }
+textarea { min-height: 110px; }
+input:focus, textarea:focus, select:focus { border-color: var(--accent); outline: 2px solid color-mix(in srgb, var(--accent) 25%, transparent); }
+.button, input[type="submit"], input[type="button"], .submit-row input, a.button { min-height: 38px; padding: 9px 14px; border: 1px solid transparent; border-radius: 4px; box-shadow: none; font-size: 12px; font-weight: 600; }
+.submit-row { padding: 14px; border: 1px solid var(--border-color); border-radius: 7px; background: var(--darkened-bg); }
+.form-row { padding: 14px; border-bottom-color: var(--hairline-color); }
+.form-row.errors { border: 1px solid var(--error-fg); }
+.aligned label { color: var(--body-quiet-color); font-size: 12px; font-weight: 600; }
+#changelist { background: transparent; }
+#changelist .changelist-form-container { min-width: 0; }
+#changelist .results { overflow-x: auto; border: 1px solid var(--border-color); border-radius: 7px; }
+#changelist table { min-width: 760px; }
+#changelist table thead th { padding: 10px 12px; background: var(--darkened-bg); color: var(--body-quiet-color); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
+#changelist table tbody td, #changelist table tbody th { padding: 11px 12px; border-top: 1px solid var(--hairline-color); }
+#changelist-filter { border: 1px solid var(--border-color); border-radius: 7px; background: var(--darkened-bg); }
+#changelist-filter h2 { padding: 11px 14px; border-bottom: 1px solid var(--hairline-color); background: transparent; }
+#changelist-filter h3 { font-size: 11px; }
+#changelist-search { display: flex; gap: 8px; padding: 0 0 16px; }
+#changelist-search #searchbar { flex: 1; max-width: 440px; }
+.paginator { border-top: 1px solid var(--hairline-color); }
+.messagelist { max-width: 1440px; margin: 20px auto 0; padding: 0 24px; }
+.messagelist li { border: 1px solid var(--border-color); border-radius: 4px; background-position: 12px center; }
+.login #container { min-height: 100vh; background: var(--body-bg); }
+.login #header { justify-content: center; }
+.login #content { width: min(390px, calc(100% - 32px)); padding-top: 12vh; }
+.login #content-main { border: 1px solid var(--border-color); border-radius: 8px; background: var(--darkened-bg); }
+.login .form-row { padding: 14px 18px 0; }
+.login .submit-row { margin: 0; padding: 18px; border: 0; background: transparent; }
+.login .submit-row input { width: 100%; }
+
+@media (max-width: 767px) {
+    #header { min-height: 64px; padding: 10px 14px; }
+    .scav-admin-brand strong, .scav-admin-return { display: none; }
+    #user-tools { max-width: 48%; text-align: right; }
+    div.breadcrumbs { padding: 0 14px; }
+    #content { padding: 24px 14px; }
+    .object-tools { margin-top: 0; }
+    #changelist-filter { margin-top: 14px; }
+}
