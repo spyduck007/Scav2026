@@ -24,7 +24,7 @@ urlpatterns = [
     path("analytics/", views.analytics_view, name="analytics"),
     path("analytics/switch-class/", views.switch_class_view, name="switch_class"),
     path(
-        "analytics/submission/<int:solve_id>/",
+        "analytics/submission/<int:submission_id>/",
         views.submission_detail_view,
         name="submission_detail",
     ),

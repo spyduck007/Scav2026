@@ -325,6 +325,7 @@ td a { font-weight: 500; }
 .answer-cell { display: block; max-width: 180px; overflow: hidden; color: var(--text-soft); text-overflow: ellipsis; white-space: nowrap; }
 .mono-link { font-family: var(--font-mono); font-size: .64rem; }
 .table-subtext { display: block; margin-top: .2rem; color: var(--text-muted); font-family: var(--font-mono); font-size: .58rem; }
+tbody tr.is-incorrect td { color: var(--text-muted); }
 .points-table { min-width: 580px; }
 .points-table td.is-current { background: var(--accent-bg); color: var(--accent); font-weight: 700; }
 

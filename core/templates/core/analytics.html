@@ -14,7 +14,7 @@
     <section class="metric-grid" aria-label="Hunt overview">
         <article class="metric"><span>Participants</span><strong>{{ overall_stats.total_participants }}</strong><small>registered accounts</small></article>
         <article class="metric"><span>Challenges</span><strong>{{ overall_stats.total_challenges }}</strong><small>{{ overall_stats.unsolved_challenges }} unsolved</small></article>
-        <article class="metric"><span>Submissions</span><strong>{{ overall_stats.total_submissions }}</strong><small>accepted solves</small></article>
+        <article class="metric"><span>Submissions</span><strong>{{ overall_stats.total_submissions }}</strong><small>{{ overall_stats.correct_submissions }} correct ({{ overall_stats.submission_accuracy }}%)</small></article>
         <article class="metric"><span>Points awarded</span><strong>{{ overall_stats.total_points_awarded }}</strong><small>across all classes</small></article>
         <article class="metric"><span>Completion</span><strong>{{ overall_stats.solved_challenges }}<small>/{{ overall_stats.total_challenges }}</small></strong><small>challenges solved</small></article>
     </section>
@@ -43,19 +43,20 @@
         </div>
 
         <div class="tab-content active" id="submissions-tab" role="tabpanel" aria-labelledby="submissions-trigger">
-            <div class="panel-heading"><div><p class="eyebrow">Latest activity</p><h2>Submission log</h2></div><span>Most recent 100 solves</span></div>
+            <div class="panel-heading"><div><p class="eyebrow">Latest activity</p><h2>Submission log</h2></div><span>Most recent 100 attempts</span></div>
             {% if submission_logs %}
                 <div class="table-scroll" tabindex="0" role="region" aria-label="Submission log table">
-                    <table><thead><tr><th>Time</th><th>Challenge</th><th>Category</th><th>Submitted by</th><th>Class</th><th>Answer</th><th class="numeric">Points</th></tr></thead>
-                    <tbody>{% for log in submission_logs %}<tr>
+                    <table><thead><tr><th>Time</th><th>Result</th><th>Challenge</th><th>Category</th><th>Submitted by</th><th>Class</th><th>Answer</th><th class="numeric">Points</th></tr></thead>
+                    <tbody>{% for log in submission_logs %}<tr{% if not log.is_correct %} class="is-incorrect"{% endif %}>
                         <td><a href="{% url 'core:submission_detail' log.id %}" class="mono-link">{{ log.created_at|date:"M j, g:i A" }}</a></td>
+                        <td>{% if log.is_correct %}<span class="badge badge--success badge--small">Correct</span>{% else %}<span class="badge badge--small">Incorrect</span>{% endif %}</td>
                         <td><a href="{% url 'core:challenge_detail' log.challenge_slug %}">{{ log.challenge_title }}</a>{% if log.is_first_blood %}<span class="badge badge--danger badge--small">First blood</span>{% endif %}</td>
                         <td>{{ log.category_name }}</td>
                         <td><a href="{% url 'core:user_detail' log.participant_username %}" title="{{ log.participant_username }}">{{ log.participant_name }}</a></td>
-                        <td>{{ log.team_year }}</td><td><code class="answer-cell" title="{{ log.submitted_answer }}">{{ log.submitted_answer }}</code></td><td class="numeric"><strong>{{ log.awarded_points }}</strong></td>
+                        <td>{{ log.team_year|default:"—" }}</td><td><code class="answer-cell" title="{{ log.submitted_answer }}">{{ log.submitted_answer }}</code></td><td class="numeric">{% if log.is_correct %}<strong>{{ log.awarded_points }}</strong>{% else %}<span class="muted">—</span>{% endif %}</td>
                     </tr>{% endfor %}</tbody></table>
                 </div>
-            {% else %}<div class="empty-state empty-state--large"><span class="empty-state__icon" aria-hidden="true">0</span><strong>No submissions yet</strong><span>Accepted answers will appear here in real time.</span></div>{% endif %}
+            {% else %}<div class="empty-state empty-state--large"><span class="empty-state__icon" aria-hidden="true">0</span><strong>No submissions yet</strong><span>Answers will appear here in real time.</span></div>{% endif %}
         </div>
 
         <div class="tab-content" id="classes-tab" role="tabpanel" aria-labelledby="classes-trigger" hidden>

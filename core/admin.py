@@ -6,6 +6,7 @@ from .models import (
     ChallengeCategory,
     ChallengeDependency,
     ChallengeSolve,
+    ChallengeSubmission,
     DiscordSettings,
     Participant,
 )
@@ -93,6 +94,26 @@ class ChallengeSolveAdmin(admin.ModelAdmin):
         "challenge__title",
         "participant__display_name",
         "participant__ion_username",
+    )
+    autocomplete_fields = ("challenge", "participant")
+
+
+@admin.register(ChallengeSubmission)
+class ChallengeSubmissionAdmin(admin.ModelAdmin):
+    list_display = (
+        "challenge",
+        "participant",
+        "team_year",
+        "is_correct",
+        "awarded_points",
+        "created_at",
+    )
+    list_filter = ("is_correct", "team_year", "challenge__category")
+    search_fields = (
+        "challenge__title",
+        "participant__display_name",
+        "participant__ion_username",
+        "submitted_answer",
     )
     autocomplete_fields = ("challenge", "participant")
 

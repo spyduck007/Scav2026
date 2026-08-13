@@ -280,6 +280,48 @@ class ChallengeSolve(models.Model):
         return f"{self.challenge} solved by {self.team_year} for {self.awarded_points}"
 
 
+class ChallengeSubmission(models.Model):
+    """Tracks every graded answer attempt for a challenge, correct or not."""
+
+    challenge = models.ForeignKey(
+        Challenge,
+        related_name="submissions",
+        on_delete=models.CASCADE,
+    )
+    participant = models.ForeignKey(
+        Participant,
+        related_name="challenge_submissions",
+        on_delete=models.CASCADE,
+    )
+    team_year = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Graduation year representing the submitting class, if assigned.",
+    )
+    submitted_answer = models.TextField()
+    is_correct = models.BooleanField(default=False)
+    awarded_points = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="Points awarded, if this submission was correct.",
+    )
+    solve = models.OneToOneField(
+        ChallengeSolve,
+        related_name="submission",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:  # pragma: no cover - trivial
+        result = "correct" if self.is_correct else "incorrect"
+        return f"{self.participant} -> {self.challenge} ({result})"
+
+
 class DiscordSettings(models.Model):
     """Singleton model for Discord webhook settings."""
 

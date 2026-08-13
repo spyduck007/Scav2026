@@ -28,6 +28,7 @@ from .models import (
     Challenge,
     ChallengeCategory,
     ChallengeSolve,
+    ChallengeSubmission,
     DiscordSettings,
     Participant,
 )
@@ -729,6 +730,13 @@ def submit_challenge(request, challenge_slug: str):
             )
 
         if not answers_match:
+            ChallengeSubmission.objects.create(
+                challenge=challenge,
+                participant=participant,
+                team_year=team_year,
+                submitted_answer=submitted_answer,
+                is_correct=False,
+            )
             messages.error(request, "Sorry, that answer is not correct. Try again!")
             return redirect("core:challenge")
 
@@ -736,12 +744,21 @@ def submit_challenge(request, challenge_slug: str):
         awarded_points = challenge.points_for_next_solve(solves_count)
         is_first_blood = solves_count == 0
 
-        ChallengeSolve.objects.create(
+        solve = ChallengeSolve.objects.create(
             challenge=challenge,
             participant=participant,
             team_year=team_year,
             awarded_points=awarded_points,
             submitted_answer=submitted_answer,
+        )
+        ChallengeSubmission.objects.create(
+            challenge=challenge,
+            participant=participant,
+            team_year=team_year,
+            submitted_answer=submitted_answer,
+            is_correct=True,
+            awarded_points=awarded_points,
+            solve=solve,
         )
 
         if is_first_blood:
@@ -836,33 +853,37 @@ def analytics_view(request):
         admin_view_as_class = None
         request.session.pop(SESSION_ADMIN_VIEW_AS_CLASS, None)
 
-    # Submission logs - get all solves with related data
-    submission_logs = ChallengeSolve.objects.select_related(
+    # Submission logs - every graded attempt, correct or not
+    submission_logs = ChallengeSubmission.objects.select_related(
         "challenge", "challenge__category", "participant"
     ).order_by("-created_at")[:100]
 
     submission_data = []
-    for solve in submission_logs:
-        submission_data.append(
-            {
-                "id": solve.id,
-                "challenge_title": solve.challenge.title,
-                "challenge_slug": solve.challenge.slug,
-                "category_name": solve.challenge.category.name,
-                "participant_name": solve.participant.display_name
-                or solve.participant.ion_username,
-                "participant_username": solve.participant.ion_username,
-                "team_year": solve.team_year,
-                "awarded_points": solve.awarded_points,
-                "submitted_answer": solve.submitted_answer,
-                "created_at": solve.created_at.astimezone(settings.SCAV_HUNT_TZ),
-                "is_first_blood": ChallengeSolve.objects.filter(
-                    challenge=solve.challenge
-                )
+    for submission in submission_logs:
+        is_first_blood = False
+        if submission.is_correct and submission.solve_id:
+            first_solve = (
+                ChallengeSolve.objects.filter(challenge=submission.challenge)
                 .order_by("created_at")
                 .first()
-                .id
-                == solve.id,
+            )
+            is_first_blood = bool(first_solve) and first_solve.id == submission.solve_id
+
+        submission_data.append(
+            {
+                "id": submission.id,
+                "challenge_title": submission.challenge.title,
+                "challenge_slug": submission.challenge.slug,
+                "category_name": submission.challenge.category.name,
+                "participant_name": submission.participant.display_name
+                or submission.participant.ion_username,
+                "participant_username": submission.participant.ion_username,
+                "team_year": submission.team_year,
+                "is_correct": submission.is_correct,
+                "awarded_points": submission.awarded_points,
+                "submitted_answer": submission.submitted_answer,
+                "created_at": submission.created_at.astimezone(settings.SCAV_HUNT_TZ),
+                "is_first_blood": is_first_blood,
             }
         )
 
@@ -974,7 +995,13 @@ def analytics_view(request):
 
     # Overall statistics
     total_participants = Participant.objects.count()
-    total_submissions = ChallengeSolve.objects.count()
+    total_submissions = ChallengeSubmission.objects.count()
+    correct_submissions = ChallengeSubmission.objects.filter(is_correct=True).count()
+    submission_accuracy = (
+        round((correct_submissions / total_submissions) * 100, 1)
+        if total_submissions
+        else 0
+    )
     total_points_awarded = (
         ChallengeSolve.objects.aggregate(total=Sum("awarded_points"))["total"] or 0
     )
@@ -1000,6 +1027,8 @@ def analytics_view(request):
         "overall_stats": {
             "total_participants": total_participants,
             "total_submissions": total_submissions,
+            "correct_submissions": correct_submissions,
+            "submission_accuracy": submission_accuracy,
             "total_points_awarded": total_points_awarded,
             "total_challenges": total_challenges,
             "solved_challenges": solved_challenges,
@@ -1043,8 +1072,8 @@ def switch_class_view(request):
     return redirect("core:analytics")
 
 
-def submission_detail_view(request, solve_id: int):
-    """Display detailed information about a specific submission."""
+def submission_detail_view(request, submission_id: int):
+    """Display detailed information about a specific submission attempt."""
     participant = _get_logged_in_participant(request)
     if not participant:
         return redirect("core:login")
@@ -1053,44 +1082,46 @@ def submission_detail_view(request, solve_id: int):
         messages.error(request, "You do not have permission to access this page.")
         return redirect("core:challenge")
 
-    solve = get_object_or_404(
-        ChallengeSolve.objects.select_related(
+    submission = get_object_or_404(
+        ChallengeSubmission.objects.select_related(
             "challenge", "challenge__category", "participant"
         ),
-        pk=solve_id,
+        pk=submission_id,
     )
 
-    # Check if this was first blood
-    first_solve = (
-        ChallengeSolve.objects.filter(challenge=solve.challenge)
-        .order_by("created_at")
-        .first()
-    )
-    is_first_blood = first_solve and first_solve.id == solve.id
+    # Check if this was first blood (only meaningful for correct submissions)
+    is_first_blood = False
+    if submission.is_correct and submission.solve_id:
+        first_solve = (
+            ChallengeSolve.objects.filter(challenge=submission.challenge)
+            .order_by("created_at")
+            .first()
+        )
+        is_first_blood = bool(first_solve) and first_solve.id == submission.solve_id
 
-    # Get other solves for the same challenge
-    other_solves = (
-        ChallengeSolve.objects.filter(challenge=solve.challenge)
-        .exclude(pk=solve.pk)
+    # Get other submission attempts for the same challenge
+    other_submissions = (
+        ChallengeSubmission.objects.filter(challenge=submission.challenge)
+        .exclude(pk=submission.pk)
         .select_related("participant")
         .order_by("created_at")
     )
 
-    # Get other solves by the same participant
-    participant_other_solves = (
-        ChallengeSolve.objects.filter(participant=solve.participant)
-        .exclude(pk=solve.pk)
+    # Get other submission attempts by the same participant
+    participant_other_submissions = (
+        ChallengeSubmission.objects.filter(participant=submission.participant)
+        .exclude(pk=submission.pk)
         .select_related("challenge", "challenge__category")
         .order_by("-created_at")[:10]
     )
 
     context = {
         "participant": participant,
-        "solve": solve,
+        "submission": submission,
         "is_first_blood": is_first_blood,
-        "other_solves": other_solves,
-        "participant_other_solves": participant_other_solves,
-        "solve_time": solve.created_at.astimezone(settings.SCAV_HUNT_TZ),
+        "other_submissions": other_submissions,
+        "participant_other_submissions": participant_other_submissions,
+        "submission_time": submission.created_at.astimezone(settings.SCAV_HUNT_TZ),
     }
 
     return render(request, "core/submission_detail.html", context)
