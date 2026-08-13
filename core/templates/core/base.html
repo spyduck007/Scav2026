@@ -22,7 +22,7 @@
     </script>
     {% block extra_head %}{% endblock %}
 </head>
-<body class="site-body {% block body_class %}{% endblock %}" {% block body_attributes %}{% endblock %}>
+<body class="site-body {% block body_class %}{% endblock %}" data-hunt-year="{{ HUNT_YEAR }}" {% block body_attributes %}{% endblock %}>
     <a class="skip-link" href="#main-content">Skip to main content</a>
 
     {% if ENABLE_SNOW_OVERLAY %}

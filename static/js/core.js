@@ -134,7 +134,8 @@
         const accept = termsOverlay.querySelector('[data-terms-accept]');
         const helper = termsOverlay.querySelector('[data-terms-helper]');
         const participantId = body.dataset.participantId || 'anonymous';
-        const termsStorageKey = 'scav-terms:' + participantId;
+        const huntYear = body.dataset.huntYear || 'na';
+        const termsStorageKey = 'scav-terms:' + huntYear + ':' + participantId;
         let accepted = false;
         try { accepted = localStorage.getItem(termsStorageKey) === 'true'; } catch (error) {}
         if (!accepted) {
