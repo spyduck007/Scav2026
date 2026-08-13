@@ -3,3 +3,5 @@ django-environ>=0.11
 requests-oauthlib>=2.0
 gunicorn
 whitenoise
+Markdown>=3.6,<4
+bleach>=6.1,<7

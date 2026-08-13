@@ -1,4 +1,4 @@
-{% load static %}
+{% load static markdown_extras %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -455,7 +455,7 @@
                 </div>
 
                 <div class="description-box">
-                    {{ challenge.description }}
+                    {{ challenge.description|render_markdown }}
                 </div>
 
                 <div class="stats-grid">

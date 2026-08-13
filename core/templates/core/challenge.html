@@ -1,4 +1,4 @@
-{% load static %}
+{% load static markdown_extras %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -201,7 +201,7 @@
                                                             </div>
                                                         </div>
                                                     </header>
-                                                    <p class="challenge-card__description">{{ challenge.description|urlize }}</p>
+                                                    <div class="challenge-card__description">{{ challenge.description|render_markdown }}</div>
 
                                                     {% if challenge.prerequisites %}
                                                         <div class="challenge-card__prereqs">

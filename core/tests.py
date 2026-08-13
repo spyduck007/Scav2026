@@ -12,11 +12,14 @@ from .models import (
     ChallengeSolve,
     Participant,
 )
+from .templatetags.markdown_extras import render_markdown
 
 
 @override_settings(
     ALLOWED_HOSTS=["testserver"],
     SCAV_HUNT_TEAM_YEARS=[2027, 2028, 2029, 2030],
+    SCAV_HUNT_START=None,
+    SCAV_HUNT_END=None,
     SCAV_SUBMISSION_COOLDOWN_SECONDS=0,
 )
 class FunctionalRegressionTests(TestCase):
@@ -108,3 +111,30 @@ class FunctionalRegressionTests(TestCase):
         closing_dependency = ChallengeDependency(challenge=third, prerequisite=first)
         with self.assertRaises(ValidationError):
             closing_dependency.full_clean()
+
+    def test_challenge_descriptions_render_safe_markdown(self):
+        description = (
+            "**Bold** and *italic*.\n\n"
+            "[Read the instructions](https://example.com/instructions)\n\n"
+            "https://example.com/plain-url\n\n"
+            "[Unsafe link](javascript:alert('nope')) <script>alert('nope')</script>"
+        )
+        self.challenge.description = description
+        self.challenge.save(update_fields=["description"])
+
+        player_response = self.client_for(self.student).get(reverse("core:challenge"))
+        admin_response = self.client_for(self.admin).get(
+            reverse("core:challenge_detail", args=[self.challenge.slug])
+        )
+
+        for response in (player_response, admin_response):
+            self.assertContains(response, "<strong>Bold</strong>", html=True)
+            self.assertContains(response, "<em>italic</em>", html=True)
+            self.assertContains(response, 'href="https://example.com/instructions"')
+            self.assertContains(response, ">Read the instructions</a>")
+            self.assertContains(response, 'href="https://example.com/plain-url"')
+            self.assertNotContains(response, "javascript:")
+
+        rendered = render_markdown(description)
+        self.assertNotIn("<script>", rendered)
+        self.assertNotIn("javascript:", rendered)
