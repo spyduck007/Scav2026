@@ -250,7 +250,6 @@ input:focus, select:focus, textarea:focus { border-color: var(--focus); outline:
 .challenge-card:hover .challenge-card__admin-actions, .challenge-card:focus-within .challenge-card__admin-actions { opacity: 1; }
 .challenge-card__admin-actions form { margin: 0; }
 .challenge-card__header { display: flex; justify-content: space-between; gap: 1rem; padding-right: 0; }
-.challenge-card--admin .challenge-card__header { padding-right: 6rem; }
 .challenge-card__kicker { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .5rem; color: var(--text-muted); font-family: var(--font-mono); font-size: .58rem; text-transform: uppercase; }
 .challenge-card__kicker span + span::before { margin-right: .5rem; color: var(--border-strong); content: "/"; }
 .challenge-card__header h4 { font-size: 1.05rem; }
@@ -480,7 +479,6 @@ td a { font-weight: 500; }
     .challenge-category__header { align-items: flex-start; }
     .challenge-card { min-height: 300px; padding: .9rem; }
     .challenge-card__admin-actions { position: static; order: -1; margin-bottom: .8rem; opacity: 1; }
-    .challenge-card--admin .challenge-card__header { padding-right: 0; }
     .answer-form { flex-direction: column; }
     .answer-form .button { width: 100%; }
     .metric-grid, .metric-grid--four { grid-template-columns: 1fr 1fr; }
