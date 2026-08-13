@@ -11,11 +11,6 @@ from .models import (
 )
 
 
-admin.site.site_header = "SCAV Operations"
-admin.site.site_title = "SCAV Operations"
-admin.site.index_title = "Hunt administration"
-
-
 class ChallengeDependencyInline(admin.TabularInline):
     model = ChallengeDependency
     fk_name = "challenge"
