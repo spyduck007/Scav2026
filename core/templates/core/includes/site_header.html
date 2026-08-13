@@ -47,6 +47,7 @@
                     <div class="profile-menu__actions">
                         <a href="{% url 'core:dashboard' %}" role="menuitem">Profile</a>
                         <a href="{% url 'core:challenge' %}" role="menuitem">Challenge board</a>
+                        <a href="{% url 'core:rules' %}" role="menuitem">Rules</a>
                         {% if participant.is_admin or participant.is_scavcomm %}<a href="{% url 'core:analytics' %}" role="menuitem">Analytics</a>{% endif %}
                         {% if participant.is_admin %}<a href="{% url 'admin:index' %}" role="menuitem">Django admin <span aria-hidden="true">↗</span></a>{% endif %}
                     </div>

@@ -566,6 +566,19 @@ def dashboard_view(request):
     return render(request, "core/dashboard.html", context)
 
 
+def rules_view(request):
+    """Show the Scavenger Hunt terms & conditions."""
+
+    participant = _get_logged_in_participant(request)
+    if not participant:
+        return redirect("core:login")
+
+    context = {
+        "participant": participant,
+    }
+    return render(request, "core/rules.html", context)
+
+
 def challenge_view(request):
     """Display the challenge page or a closed notice based on hunt status."""
 

@@ -1,0 +1,22 @@
+{% extends "core/base.html" %}
+
+{% block title %}Rules · SCAV {{ HUNT_YEAR }}{% endblock %}
+{% block body_class %}app-page{% endblock %}
+{% block body_attributes %}data-participant-id="{{ participant.pk }}"{% endblock %}
+
+{% block content %}
+<main id="main-content" class="page-shell page-shell--narrow">
+    <header class="page-heading">
+        <div>
+            <p class="eyebrow">Required acknowledgement</p>
+            <h1>Rules</h1>
+            <p>The Scavenger Hunt terms &amp; conditions you agreed to when you first joined.</p>
+        </div>
+        <a class="button button--primary" href="{% url 'core:challenge' %}">Open challenge board</a>
+    </header>
+
+    <section class="surface section-block prose">
+        {% include "core/includes/terms_content.html" %}
+    </section>
+</main>
+{% endblock %}
