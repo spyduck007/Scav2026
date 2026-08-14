@@ -1439,7 +1439,10 @@ def links_view(request):
 
         return redirect("core:links")
 
-    links = ShortLink.objects.select_related("created_by").order_by("-created_at")
+    links = ShortLink.objects.filter(is_active=True).select_related("created_by")
+    if not participant.is_admin:
+        links = links.filter(created_by=participant)
+    links = links.order_by("-created_at")
 
     context = {
         "participant": participant,
@@ -1451,7 +1454,12 @@ def links_view(request):
 
 @require_POST
 def revoke_link_view(request, link_id: int):
-    """Revoke a short link so it stops resolving."""
+    """Revoke a short link so it stops resolving.
+
+    Revoking is a soft delete: the row (and its click history) stays in the
+    database and simply drops off this page, so admins can still see it in
+    Django admin and re-enable it there if needed.
+    """
 
     participant = _get_logged_in_participant(request)
     if not participant:
@@ -1462,6 +1470,10 @@ def revoke_link_view(request, link_id: int):
         return redirect("core:challenge")
 
     link = get_object_or_404(ShortLink, pk=link_id)
+    if not participant.is_admin and link.created_by_id != participant.pk:
+        messages.error(request, "You can only revoke links you created.")
+        return redirect("core:links")
+
     link.is_active = False
     link.save(update_fields=["is_active"])
     messages.success(request, f"Revoked /s/{link.alias}/.")
