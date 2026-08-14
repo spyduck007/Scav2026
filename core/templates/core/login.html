@@ -13,12 +13,7 @@
         </div>
         <p class="eyebrow">TJHSST Scavenger Hunt</p>
         <h1 id="login-title">The hunt starts here.</h1>
-        <p class="auth-intro__copy">Sign in with your TJ Ion account to join your class team, solve challenges, and follow the live standings.</p>
-        <div class="auth-meta" aria-label="Hunt features">
-            <span>Class competition</span>
-            <span>Live scoring</span>
-            <span>Team challenges</span>
-        </div>
+        <p class="auth-intro__copy">Sign in with your Ion account to join your class team, solve challenges, and follow the live standings.</p>
     </section>
 
     <section class="auth-panel" aria-labelledby="signin-heading">
@@ -28,7 +23,6 @@
         </div>
         <div class="auth-panel__body">
             <h2 id="signin-heading">Sign in to continue</h2>
-            <p>Your Ion profile identifies your account and class team.</p>
 
             {% if missing_settings %}
                 <div class="alert alert--warning" role="alert">
@@ -46,8 +40,6 @@
             {% else %}
                 <span class="button button--primary button--block" aria-disabled="true">Continue with Ion</span>
             {% endif %}
-
-            <p class="auth-panel__note">Access is limited to configured Ion accounts. Your password is never shared with this site.</p>
         </div>
     </section>
 </main>

@@ -8,16 +8,14 @@
 <main id="main-content" class="page-shell page-shell--wide">
     <header class="page-heading">
         <div>
-            <p class="eyebrow">Operations</p>
             <h1>Short links</h1>
-            <p>Create and manage in-house short links for challenges, instead of relying on third-party shorteners. Every link requires a signed-in participant to resolve, and unknown/incorrect aliases are rate limited to block brute-forcing.{% if not participant.is_admin %} You can only see and revoke links you created yourself.{% endif %}</p>
         </div>
         <a class="button button--primary" href="{% url 'core:challenge' %}">Open challenge board</a>
     </header>
 
     <section class="surface section-block" aria-labelledby="create-link-heading">
         <div class="section-heading">
-            <div><p class="eyebrow">New link</p><h2 id="create-link-heading">Create a short link</h2></div>
+            <div><h2 id="create-link-heading">Create a short link</h2></div>
         </div>
         <form method="post" class="link-form">
             {% csrf_token %}
@@ -38,12 +36,12 @@
 
     <section class="surface section-block" aria-labelledby="links-heading">
         <div class="section-heading">
-            <div><p class="eyebrow">{% if participant.is_admin %}All links{% else %}Your links{% endif %}</p><h2 id="links-heading">Short links</h2></div>
+            <div><h2 id="links-heading">Short links</h2></div>
             <span class="section-heading__hint">{{ links|length }} total</span>
         </div>
         {% if links %}
             <div class="table-scroll" tabindex="0" role="region" aria-label="Short links table">
-                <table><thead><tr><th>Alias</th><th>Destination</th><th>Created by</th><th>Created</th><th class="numeric">Clicks</th><th>Last click</th><th></th></tr></thead>
+                <table><thead><tr><th>Alias</th><th>Destination</th><th>Created by</th><th>Created</th><th class="numeric">Clicks</th><th>Last click</th><th>Actions</th></tr></thead>
                 <tbody>{% for link in links %}<tr>
                     <td><code class="answer-cell link-alias" title="{{ link_prefix }}{{ link.alias }}/">/s/{{ link.alias }}/</code></td>
                     <td><a class="answer-cell" href="{{ link.target_url }}" target="_blank" rel="noopener" title="{{ link.target_url }}">{{ link.target_url }}</a></td>
@@ -51,7 +49,10 @@
                     <td>{{ link.created_at|date:"M j, g:i A" }}</td>
                     <td class="numeric">{{ link.click_count }}</td>
                     <td>{% if link.last_accessed_at %}{{ link.last_accessed_at|date:"M j, g:i A" }}{% else %}<span class="muted">Never</span>{% endif %}</td>
-                    <td>{% if participant.is_admin or link.created_by_id == participant.pk %}<form method="post" action="{% url 'core:revoke_link' link.pk %}">{% csrf_token %}<button type="submit" class="button button--secondary button--small">Revoke</button></form>{% endif %}</td>
+                    <td><div class="link-actions">
+                        <button type="button" class="button button--secondary button--small" data-copy-link="{{ link_prefix }}{{ link.alias }}/">Copy</button>
+                        {% if participant.is_admin or link.created_by_id == participant.pk %}<form method="post" action="{% url 'core:revoke_link' link.pk %}">{% csrf_token %}<button type="submit" class="button button--secondary button--small">Revoke</button></form>{% endif %}
+                    </div></td>
                 </tr>{% endfor %}</tbody></table>
             </div>
         {% else %}

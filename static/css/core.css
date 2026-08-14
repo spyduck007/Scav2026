@@ -124,7 +124,6 @@ code { font-family: var(--font-mono); }
 .profile-menu__logout { margin: 0; padding: .4rem; border-top: 1px solid var(--border); }
 
 .site-footer { width: min(100% - 3rem, var(--content-wide)); margin: auto auto 0; padding: 2.2rem 0; display: flex; justify-content: center; gap: .65rem; color: var(--text-muted); font-family: var(--font-mono); font-size: .66rem; letter-spacing: .04em; text-transform: uppercase; }
-.site-footer__separator { color: var(--border-strong); }
 .page-shell { width: min(calc(100% - 3rem), var(--content)); margin: 0 auto; padding: 3.5rem 0 4.5rem; }
 .page-shell--wide { width: min(calc(100% - 3rem), var(--content-wide)); }
 .page-shell--narrow { max-width: 1080px; }
@@ -187,15 +186,11 @@ input:focus, select:focus, textarea:focus { border-color: var(--focus); outline:
 .auth-brand strong { color: var(--accent); }
 .auth-brand__mark { width: 34px; height: 34px; overflow: hidden; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); }
 .auth-brand__mark img { width: 100%; height: 100%; object-fit: cover; }
-.auth-meta { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 2.3rem; color: var(--text-muted); font-family: var(--font-mono); font-size: .66rem; }
-.auth-meta span { padding-left: 1rem; position: relative; }
-.auth-meta span::before { position: absolute; left: 0; top: 50%; width: 4px; height: 4px; border-radius: 50%; background: var(--border-strong); content: ""; }
 .auth-panel { border: 1px solid var(--border-strong); border-radius: var(--radius-lg); background: var(--surface-1); }
 .auth-panel__header { display: flex; align-items: center; gap: .65rem; padding: .75rem 1rem; border-bottom: 1px solid var(--border); color: var(--text-muted); font-family: var(--font-mono); font-size: .65rem; }
 .auth-panel__body { padding: 1.6rem; }
-.auth-panel__body h2 { font-size: 1.3rem; }
+.auth-panel__body h2 { margin-bottom: 1rem; font-size: 1.3rem; }
 .auth-panel__body > p { margin: .55rem 0 1.5rem; color: var(--text-soft); font-size: .82rem; }
-.auth-panel__note { margin: 1rem 0 0 !important; color: var(--text-muted) !important; font-size: .7rem !important; text-align: center; }
 .alert { margin-bottom: 1rem; padding: .9rem; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface-2); font-size: .75rem; }
 .alert--warning { border-color: color-mix(in srgb, var(--warning) 35%, transparent); background: var(--warning-bg); color: var(--warning); }
 .alert p { margin: .3rem 0; }
@@ -269,7 +264,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--focus); outline:
 .challenge-status svg { width: 17px; height: 17px; }
 .challenge-status--success { color: var(--success); }
 .solve-history { margin-top: .7rem; color: var(--text-muted); font-size: .68rem; }
-.solve-history summary { width: fit-content; cursor: pointer; }
+.solve-history__label { display: block; font-weight: 600; }
 .solve-history ul { margin-top: .55rem; border-top: 1px solid var(--border); list-style: none; }
 .solve-history li { display: flex; justify-content: space-between; padding: .4rem 0; border-bottom: 1px solid var(--border); }
 .solve-history li.is-current { color: var(--accent); }
@@ -296,6 +291,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--focus); outline:
 .link-form__alias-wrap input { flex: 1; min-width: 0; padding: .55rem 0; border: 0; background: transparent; }
 .link-form__alias-wrap input:focus { outline: none; }
 .link-form__alias-wrap:focus-within { border-color: var(--focus); outline: 2px solid color-mix(in srgb, var(--focus) 28%, transparent); outline-offset: 1px; }
+.link-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
 .analytics-workspace { margin-top: 1rem; overflow: hidden; }
 .tabs { display: flex; overflow-x: auto; gap: .25rem; padding: .45rem; border-bottom: 1px solid var(--border); background: var(--surface-0); scrollbar-width: thin; }
 .tab-button { min-height: 38px; display: inline-flex; align-items: center; gap: .55rem; padding: .45rem .75rem; border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; color: var(--text-muted); font-size: .74rem; font-weight: 600; white-space: nowrap; }

@@ -144,6 +144,44 @@
         toastContainer.querySelectorAll('[data-toast]').forEach(wireToast);
     }
 
+    function copyFallback(value) {
+        const textarea = document.createElement('textarea');
+        textarea.value = value;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        let copied = false;
+        try { copied = document.execCommand('copy'); } catch (error) {}
+        textarea.remove();
+        return copied;
+    }
+
+    document.querySelectorAll('[data-copy-link]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            const value = button.dataset.copyLink;
+            const copied = function () {
+                const label = button.textContent;
+                button.textContent = 'Copied';
+                window.setTimeout(function () {
+                    if (button.isConnected) button.textContent = label;
+                }, 1400);
+            };
+            const failed = function () { showToast('Unable to copy short link.', 'error'); };
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(value).then(copied).catch(function () {
+                    if (!copyFallback(value)) failed();
+                    else copied();
+                });
+            } else if (!copyFallback(value)) {
+                failed();
+            } else {
+                copied();
+            }
+        });
+    });
+
     const STATUS_TAGS = { correct: 'success', already_solved: 'info' };
 
     function pluralize(count, word) {

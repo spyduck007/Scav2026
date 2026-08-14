@@ -8,9 +8,7 @@
 <main id="main-content" class="page-shell page-shell--narrow">
     <header class="page-heading">
         <div>
-            <p class="eyebrow">Participant profile</p>
             <h1>{{ participant.display_name|default:participant.ion_username }}</h1>
-            <p>Your Scavenger Hunt identity and team assignment are synced from Ion.</p>
         </div>
         <a class="button button--primary" href="{% url 'core:challenge' %}">Open challenge board</a>
     </header>

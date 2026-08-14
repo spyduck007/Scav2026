@@ -9,9 +9,8 @@
 <main id="main-content" class="page-shell page-shell--wide">
     <header class="page-heading challenge-heading">
         <div>
-            <p class="eyebrow">Live competition</p>
             <h1>Challenge board</h1>
-            <p>{% if challenge_catalog.team_label %}Representing <strong>{{ challenge_catalog.team_label }}</strong>. Every accepted answer adds to your class score.{% else %}Your class assignment is pending. You can browse now and submit once a team is assigned.{% endif %}</p>
+            <p>{% if challenge_catalog.team_label %}Representing <strong>{{ challenge_catalog.team_label }}</strong>.{% else %}Your class assignment is pending. You can browse now and submit once a team is assigned.{% endif %}</p>
         </div>
         {% if show_countdown %}
             <div class="countdown-block"><span>Time remaining</span><strong data-countdown="{{ countdown_target }}">Loading…</strong></div>
@@ -24,7 +23,6 @@
         <aside class="surface standings-panel" aria-labelledby="standings-heading">
             <div class="section-heading section-heading--compact">
                 <div><p class="eyebrow">Live score</p><h2 id="standings-heading">Standings</h2></div>
-                <span class="section-heading__hint">{{ leaderboard|length }} teams</span>
             </div>
             <ol class="ranking-list ranking-list--compact">
                 {% for entry in leaderboard %}
@@ -39,9 +37,8 @@
 
         <section class="challenge-board" aria-labelledby="challenges-heading">
             <div class="surface board-toolbar">
-                <div><p class="eyebrow">Available objectives</p><h2 id="challenges-heading">Challenges</h2></div>
+                <div><h2 id="challenges-heading">Challenges</h2></div>
                 <div class="board-toolbar__meta">
-                    <span>{{ challenge_catalog.categories|length }} categor{{ challenge_catalog.categories|length|pluralize:"y,ies" }}</span>
                     {% if participant.is_admin %}<span class="badge badge--danger">Admin controls enabled</span>{% endif %}
                 </div>
             </div>
@@ -51,7 +48,7 @@
                     {% for category in challenge_catalog.categories %}
                         <section class="surface challenge-category" id="category-{{ category.slug }}">
                             <header class="challenge-category__header">
-                                <div><p class="eyebrow">Category {{ forloop.counter|stringformat:"02d" }}</p><h3>{{ category.name }}</h3>{% if category.description %}<p>{{ category.description }}</p>{% endif %}</div>
+                                <div><h3>{{ category.name }}</h3>{% if category.description %}<p>{{ category.description }}</p>{% endif %}</div>
                                 <span>{{ category.challenges|length }} challenge{{ category.challenges|length|pluralize }}</span>
                             </header>
                             {% if category.challenges %}
@@ -102,13 +99,13 @@
                                             </div>
 
                                             {% if challenge.solves_summary %}
-                                                <details class="solve-history"><summary>View solve history</summary><ul>{% for entry in challenge.solves_summary %}<li{% if entry.by_user_team %} class="is-current"{% endif %}><span>Class of {{ entry.team_year }}</span><strong>{{ entry.awarded_points }} pts</strong></li>{% endfor %}</ul></details>
+                                                <div class="solve-history" aria-label="Solve history"><span class="solve-history__label">Solve history</span><ul>{% for entry in challenge.solves_summary %}<li{% if entry.by_user_team %} class="is-current"{% endif %}><span>Class of {{ entry.team_year }}</span><strong>{{ entry.awarded_points }} pts</strong></li>{% endfor %}</ul></div>
                                             {% endif %}
                                         </article>
                                     {% endfor %}
                                 </div>
                             {% else %}
-                                <div class="empty-state"><strong>No challenges published</strong><span>This category is ready for organizers to add objectives.</span></div>
+                                <div class="empty-state"><strong>No challenges published</strong></div>
                             {% endif %}
                         </section>
                     {% endfor %}

@@ -122,7 +122,7 @@ def _hunt_window_status() -> tuple[bool, str, str]:
     end = settings.SCAV_HUNT_END
 
     if start and now < start:
-        message = "The hunt hasn't opened yet. Doors open on {when}.".format(
+        message = "Doors open on {when}.".format(
             when=_format_est(start)
         )
         return False, "upcoming", message

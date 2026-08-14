@@ -7,7 +7,7 @@
 {% block content %}
 <main id="main-content" class="page-shell page-shell--wide">
     <header class="page-heading">
-        <div><p class="eyebrow">Operations</p><h1>Hunt analytics</h1><p>Monitor participation, scoring, submissions, and challenge performance across every class.</p></div>
+        <div><h1>Hunt analytics</h1></div>
         <div class="page-heading__meta">{% if hunt_starts_at %}<span><small>Starts</small>{{ hunt_starts_at }}</span>{% endif %}{% if hunt_ends_at %}<span><small>Ends</small>{{ hunt_ends_at }}</span>{% endif %}</div>
     </header>
 
@@ -20,7 +20,7 @@
     </section>
 
     <section class="surface view-switcher">
-        <div><p class="eyebrow">Troubleshooting context</p><h2>View as a class</h2><p>Preview standings from another class without changing your account or permissions.</p></div>
+        <div><h2>View as a class</h2><p>Preview standings from another class without changing your account or permissions.</p></div>
         <form method="post" action="{% url 'core:switch_class' %}" class="inline-form">
             {% csrf_token %}
             <label class="sr-only" for="class-year">Class year</label>
@@ -79,7 +79,7 @@
         </div>
 
         <div class="tab-content" id="leaderboard-tab" role="tabpanel" aria-labelledby="leaderboard-trigger" hidden>
-            <div class="panel-heading"><div><p class="eyebrow">Live competition</p><h2>Leaderboard</h2></div><span>All class teams</span></div>
+            <div class="panel-heading"><div><h2>Leaderboard</h2></div><span>All class teams</span></div>
             <ol class="ranking-list ranking-list--large">{% for entry in leaderboard %}<li class="ranking-row{% if entry.is_user_team %} ranking-row--current{% endif %}"><span class="ranking-row__rank">{{ entry.rank|stringformat:"02d" }}</span><span class="ranking-row__team">{{ entry.label }}<small>{{ entry.member_count }} member{{ entry.member_count|pluralize }}{% if entry.is_user_team %} / selected view{% endif %}</small></span><strong>{{ entry.score }} <small>pts</small></strong></li>{% endfor %}</ol>
         </div>
     </section>
