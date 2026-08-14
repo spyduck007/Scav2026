@@ -1,10 +1,18 @@
-"""Rate limits short-link redirects (and any unknown path) per IP.
+"""Rate limits short-link redirects (and any unknown path), per participant.
 
 This exists to blunt brute-forcing of short link aliases: rather than
 maintaining a whitelist of "known good" paths that has to be kept in sync
 with every new page, every real page in the app is implicitly exempt, and
 only two things get throttled: the short-link redirect view itself, and
 paths that don't resolve to anything at all.
+
+Throttling is keyed by the logged-in participant rather than IP, since a
+lot of participants share the same IP on school wifi (NAT), and an IP-based
+limit would throttle everyone behind it together. Anonymous requests (no
+session yet) fall back to IP, since there's nothing else to key them by --
+but note that an anonymous visitor can never actually distinguish a valid
+alias from an invalid one anyway, since short_link_redirect_view sends
+every anonymous request to login before it ever looks the alias up.
 """
 
 from django.conf import settings
@@ -27,8 +35,9 @@ class ShortLinkRateLimitMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        if self._should_throttle(request):
-            cache_key = f"linkrate:{_client_ip(request)}"
+        throttle_key = self._throttle_key(request)
+        if throttle_key is not None:
+            cache_key = f"linkrate:{throttle_key}"
             if cache.get(cache_key):
                 return HttpResponse(
                     "Too many requests. Please wait a few seconds and try again.",
@@ -40,27 +49,31 @@ class ShortLinkRateLimitMiddleware:
 
         return self.get_response(request)
 
-    def _should_throttle(self, request) -> bool:
+    def _throttle_key(self, request) -> str | None:
+        """Return the cache key to rate-limit by, or None to skip throttling."""
+
         try:
             match = resolve(request.path_info)
         except Resolver404:
-            return True
+            pass  # genuinely unknown path -> still throttle, below
+        else:
+            if match.func != short_link_redirect_view:
+                return None  # a real page, never throttled
 
-        if match.func != short_link_redirect_view:
-            return False
+        participant_id = request.session.get(SESSION_PARTICIPANT_KEY)
+        if not participant_id:
+            return f"ip:{_client_ip(request)}"
 
         # Exempt logged-in admins/scavcomm so they can manage and test links
         # without tripping their own anti-brute-force protection.
         from .models import Participant
 
-        participant_id = request.session.get(SESSION_PARTICIPANT_KEY)
-        if participant_id:
-            participant = (
-                Participant.objects.filter(pk=participant_id)
-                .only("is_admin", "is_scavcomm")
-                .first()
-            )
-            if participant and (participant.is_admin or participant.is_scavcomm):
-                return False
+        participant = (
+            Participant.objects.filter(pk=participant_id)
+            .only("is_admin", "is_scavcomm")
+            .first()
+        )
+        if participant and (participant.is_admin or participant.is_scavcomm):
+            return None
 
-        return True
+        return f"user:{participant_id}"
