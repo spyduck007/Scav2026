@@ -130,10 +130,6 @@ class Challenge(models.Model):
     )
     answer_case_sensitive = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
-    allow_multiple_solves = models.BooleanField(
-        default=False,
-        help_text="Reserved for future modes; remains False so only one solve per class.",
-    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

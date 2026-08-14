@@ -80,6 +80,51 @@ class ChallengeAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("title",)}
     inlines = (ChallengeDependencyInline,)
 
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "category",
+                    "challenge_type",
+                    "title",
+                    "slug",
+                    "description",
+                    "sort_order",
+                ),
+            },
+        ),
+        (
+            "Scoring",
+            {
+                "fields": ("base_points",),
+            },
+        ),
+        (
+            "Decreasing challenge settings",
+            {
+                "classes": ("challenge-decreasing-fields",),
+                "description": 'Only used when Challenge type is "Decreasing".',
+                "fields": ("decay_percent", "minimum_points"),
+            },
+        ),
+        (
+            "Answer",
+            {
+                "fields": ("answer", "answer_case_sensitive"),
+            },
+        ),
+        (
+            "Status",
+            {
+                "fields": ("is_active",),
+            },
+        ),
+    )
+
+    class Media:
+        js = ("js/admin_challenge_type.js",)
+
 
 @admin.register(ChallengeSolve)
 class ChallengeSolveAdmin(admin.ModelAdmin):
