@@ -354,3 +354,33 @@ class DiscordSettings(models.Model):
 
     def __str__(self) -> str:
         return "Discord Settings"
+
+
+class ShortLink(models.Model):
+    """A short redirect alias, used in place of third-party URL shorteners."""
+
+    alias = models.SlugField(
+        max_length=64,
+        unique=True,
+        help_text="The path segment used after /s/, e.g. 'clue1' for /s/clue1/.",
+    )
+    target_url = models.URLField(
+        max_length=2000, help_text="The destination the short link redirects to."
+    )
+    created_by = models.ForeignKey(
+        Participant,
+        related_name="short_links",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    click_count = models.PositiveIntegerField(default=0)
+    last_accessed_at = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:  # pragma: no cover - trivial
+        return f"/s/{self.alias}/ -> {self.target_url}"

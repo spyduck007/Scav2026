@@ -35,4 +35,7 @@ urlpatterns = [
         name="challenge_detail",
     ),
     path("logout/", views.logout_view, name="logout"),
+    path("links/", views.links_view, name="links"),
+    path("links/<int:link_id>/revoke/", views.revoke_link_view, name="revoke_link"),
+    path("s/<slug:alias>/", views.short_link_redirect_view, name="short_link_redirect"),
 ]

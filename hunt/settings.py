@@ -17,6 +17,7 @@ env = environ.Env(
     ION_SCOPE=(list, ["read"]),
     SCAV_HUNT_TEAM_YEARS=(list, []),
     SCAV_SUBMISSION_COOLDOWN_SECONDS=(int, 3),
+    SCAV_LINK_RATE_LIMIT_SECONDS=(int, 4),
     HUNT_YEAR=(str, "2025"),  # Changed to str to accept any string value
     ENABLE_SNOW_OVERLAY=(bool, True),
 )
@@ -115,6 +116,10 @@ SCAV_HUNT_TEAM_YEARS = _build_team_years()
 # Challenge submission rate limit (seconds between attempts)
 SCAV_SUBMISSION_COOLDOWN_SECONDS = env("SCAV_SUBMISSION_COOLDOWN_SECONDS")
 
+# Rate limit (seconds between attempts, per IP) applied to short-link redirects
+# and any other unrecognized URL, to blunt brute-forcing of short link aliases.
+SCAV_LINK_RATE_LIMIT_SECONDS = env("SCAV_LINK_RATE_LIMIT_SECONDS")
+
 
 # Application definition
 
@@ -137,6 +142,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "core.middleware.ShortLinkRateLimitMiddleware",
 ]
 
 ROOT_URLCONF = "hunt.urls"

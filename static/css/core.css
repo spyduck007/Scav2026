@@ -153,6 +153,7 @@ code { font-family: var(--font-mono); }
 .button--secondary { border-color: var(--border-strong); background: var(--surface-2); color: var(--text); }
 .button--secondary:hover { background: var(--surface-3); color: var(--text); }
 .button--block { width: 100%; }
+.button--small { min-height: 30px; padding: .35rem .65rem; font-size: .68rem; }
 .text-link { font-size: .78rem; font-weight: 600; }
 input, select, textarea { min-height: 40px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); }
 input, textarea { padding: .55rem .7rem; }
@@ -287,6 +288,14 @@ input:focus, select:focus, textarea:focus { border-color: var(--focus); outline:
 .view-switcher h2 { margin-top: .2rem; }
 .view-switcher p:not(.eyebrow) { margin-top: .25rem; color: var(--text-muted); font-size: .72rem; }
 .inline-form { display: flex; gap: .5rem; }
+.link-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .85rem; margin-top: 1rem; }
+.link-form__field { display: flex; flex: 1 1 240px; flex-direction: column; gap: .35rem; min-width: 0; }
+.link-form__field label { color: var(--text-muted); font-size: .62rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.link-form__alias-wrap { display: flex; align-items: center; gap: .4rem; padding: 0 .7rem; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--bg); }
+.link-form__alias-wrap span { color: var(--text-muted); font-family: var(--font-mono); font-size: .78rem; }
+.link-form__alias-wrap input { flex: 1; min-width: 0; padding: .55rem 0; border: 0; background: transparent; }
+.link-form__alias-wrap input:focus { outline: none; }
+.link-form__alias-wrap:focus-within { border-color: var(--focus); outline: 2px solid color-mix(in srgb, var(--focus) 28%, transparent); outline-offset: 1px; }
 .analytics-workspace { margin-top: 1rem; overflow: hidden; }
 .tabs { display: flex; overflow-x: auto; gap: .25rem; padding: .45rem; border-bottom: 1px solid var(--border); background: var(--surface-0); scrollbar-width: thin; }
 .tab-button { min-height: 38px; display: inline-flex; align-items: center; gap: .55rem; padding: .45rem .75rem; border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; color: var(--text-muted); font-size: .74rem; font-weight: 600; white-space: nowrap; }

@@ -1,6 +1,7 @@
 """Views for the Scavenger Hunt core app."""
 
 import json
+import re
 from collections import defaultdict
 from datetime import timedelta
 from math import ceil
@@ -14,9 +15,10 @@ from django.contrib.auth import (
     login as auth_login,
     logout as auth_logout,
 )
-from django.core.exceptions import ImproperlyConfigured
-from django.db import transaction
-from django.db.models import Count, Prefetch, Sum
+from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.core.validators import URLValidator
+from django.db import IntegrityError, transaction
+from django.db.models import Count, F, Prefetch, Sum
 from django.http import (
     HttpResponse,
     HttpResponseBadRequest,
@@ -26,6 +28,7 @@ from django.http import (
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import formats, timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from requests_oauthlib import OAuth2Session
 
@@ -36,7 +39,11 @@ from .models import (
     ChallengeSubmission,
     DiscordSettings,
     Participant,
+    ShortLink,
 )
+
+ALIAS_PATTERN = re.compile(r"^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$")
+POST_LOGIN_REDIRECT_SESSION_KEY = "post_login_redirect"
 
 
 SESSION_STATE_KEY = "ion_oauth_state"
@@ -555,6 +562,12 @@ def oauth_callback(request):
         user.save(update_fields=list(set(updated_fields)))
 
     auth_login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+
+    next_url = request.session.pop(POST_LOGIN_REDIRECT_SESSION_KEY, None)
+    if next_url and url_has_allowed_host_and_scheme(
+        next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        return redirect(next_url)
 
     return redirect("core:challenge")
 
@@ -1384,3 +1397,90 @@ def challenge_detail_view(request, challenge_slug: str):
     }
 
     return render(request, "core/challenge_detail.html", context)
+
+
+def links_view(request):
+    """Create and manage short links, for scavcomm and admins."""
+
+    participant = _get_logged_in_participant(request)
+    if not participant:
+        return redirect("core:login")
+
+    if not participant.can_view_analytics():
+        messages.error(request, "You do not have permission to access this page.")
+        return redirect("core:challenge")
+
+    if request.method == "POST":
+        target_url = (request.POST.get("target_url") or "").strip()
+        alias = (request.POST.get("alias") or "").strip().lower()
+
+        if not target_url or not alias:
+            messages.error(request, "Both a destination URL and an alias are required.")
+        elif not ALIAS_PATTERN.match(alias):
+            messages.error(
+                request,
+                "Alias may only contain lowercase letters, numbers, and hyphens, "
+                "and can't start or end with a hyphen.",
+            )
+        else:
+            try:
+                URLValidator(schemes=["http", "https"])(target_url)
+            except ValidationError:
+                messages.error(request, "Enter a valid http:// or https:// URL to shorten.")
+            else:
+                try:
+                    ShortLink.objects.create(
+                        alias=alias, target_url=target_url, created_by=participant
+                    )
+                except IntegrityError:
+                    messages.error(request, f'The alias "{alias}" is already in use.')
+                else:
+                    messages.success(request, f"Short link created: /s/{alias}/")
+
+        return redirect("core:links")
+
+    links = ShortLink.objects.select_related("created_by").order_by("-created_at")
+
+    context = {
+        "participant": participant,
+        "links": links,
+        "link_prefix": request.build_absolute_uri("/s/"),
+    }
+    return render(request, "core/links.html", context)
+
+
+@require_POST
+def revoke_link_view(request, link_id: int):
+    """Revoke a short link so it stops resolving."""
+
+    participant = _get_logged_in_participant(request)
+    if not participant:
+        return redirect("core:login")
+
+    if not participant.can_view_analytics():
+        messages.error(request, "You do not have permission to perform this action.")
+        return redirect("core:challenge")
+
+    link = get_object_or_404(ShortLink, pk=link_id)
+    link.is_active = False
+    link.save(update_fields=["is_active"])
+    messages.success(request, f"Revoked /s/{link.alias}/.")
+
+    return redirect("core:links")
+
+
+def short_link_redirect_view(request, alias: str):
+    """Resolve a short link alias and redirect to its target."""
+
+    participant = _get_logged_in_participant(request)
+    if not participant:
+        request.session[POST_LOGIN_REDIRECT_SESSION_KEY] = request.get_full_path()
+        return redirect("core:login")
+
+    link = get_object_or_404(ShortLink, alias=alias, is_active=True)
+
+    ShortLink.objects.filter(pk=link.pk).update(
+        click_count=F("click_count") + 1, last_accessed_at=timezone.now()
+    )
+
+    return redirect(link.target_url)

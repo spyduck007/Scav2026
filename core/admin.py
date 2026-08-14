@@ -9,6 +9,7 @@ from .models import (
     ChallengeSubmission,
     DiscordSettings,
     Participant,
+    ShortLink,
 )
 
 
@@ -116,6 +117,21 @@ class ChallengeSubmissionAdmin(admin.ModelAdmin):
         "submitted_answer",
     )
     autocomplete_fields = ("challenge", "participant")
+
+
+@admin.register(ShortLink)
+class ShortLinkAdmin(admin.ModelAdmin):
+    list_display = (
+        "alias",
+        "target_url",
+        "created_by",
+        "click_count",
+        "is_active",
+        "created_at",
+    )
+    list_filter = ("is_active",)
+    search_fields = ("alias", "target_url", "created_by__ion_username")
+    autocomplete_fields = ("created_by",)
 
 
 @admin.register(Participant)
