@@ -45,7 +45,7 @@
             <div class="table-scroll" tabindex="0" role="region" aria-label="Short links table">
                 <table><thead><tr><th>Alias</th><th>Destination</th><th>Created by</th><th>Created</th><th class="numeric">Clicks</th><th>Last click</th><th></th></tr></thead>
                 <tbody>{% for link in links %}<tr>
-                    <td><code class="answer-cell" title="{{ link_prefix }}{{ link.alias }}/">/s/{{ link.alias }}/</code></td>
+                    <td><code class="answer-cell link-alias" title="{{ link_prefix }}{{ link.alias }}/">/s/{{ link.alias }}/</code></td>
                     <td><a class="answer-cell" href="{{ link.target_url }}" target="_blank" rel="noopener" title="{{ link.target_url }}">{{ link.target_url }}</a></td>
                     <td>{% if link.created_by %}<a href="{% url 'core:user_detail' link.created_by.ion_username %}">{{ link.created_by.display_name|default:link.created_by.ion_username }}</a>{% else %}<span class="muted">Unknown</span>{% endif %}</td>
                     <td>{{ link.created_at|date:"M j, g:i A" }}</td>
