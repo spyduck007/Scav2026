@@ -168,6 +168,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--focus); outline:
 .badge--danger { border-color: color-mix(in srgb, var(--danger) 32%, transparent); background: var(--danger-bg); color: var(--danger); }
 .badge-row { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .8rem; }
 .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 16%, transparent); }
+.status-dot--danger { background: var(--danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 16%, transparent); }
 
 .metric-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--border); }
 .metric-grid--four { grid-template-columns: repeat(4, minmax(0, 1fr)); }

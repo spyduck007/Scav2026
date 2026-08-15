@@ -14,8 +14,10 @@
         </div>
         {% if show_countdown %}
             <div class="countdown-block"><span>Time remaining</span><strong data-countdown="{{ countdown_target }}">Loading…</strong></div>
-        {% else %}
+        {% elif hunt_state == "open" %}
             <div class="status-label"><span class="status-dot"></span>Hunt is open</div>
+        {% else %}
+            <div class="status-label"><span class="status-dot status-dot--danger"></span>Hunt is closed</div>
         {% endif %}
     </header>
 
@@ -112,7 +114,7 @@
                     {% endfor %}
                 </div>
             {% else %}
-                <div class="surface empty-state empty-state--large"><span class="empty-state__icon" aria-hidden="true">+</span><strong>Challenges are being prepared</strong><span>Organizers will publish the first category here when it is ready.</span></div>
+                <div class="surface empty-state empty-state--large"><strong>Challenges are being prepared</strong><span>Organizers will publish the first category here when it is ready.</span></div>
             {% endif %}
         </section>
     </div>
