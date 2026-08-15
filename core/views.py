@@ -573,14 +573,24 @@ def oauth_callback(request):
 
 
 def dashboard_view(request):
-    """Show a minimal dashboard for authenticated participants."""
+    """Show a personal dashboard for authenticated participants."""
 
     participant = _get_logged_in_participant(request)
     if not participant:
         return redirect("core:login")
 
+    solves = (
+        ChallengeSolve.objects.filter(participant=participant)
+        .select_related("challenge", "challenge__category")
+        .order_by("-created_at")
+    )
+    total_points = solves.aggregate(total=Sum("awarded_points"))["total"] or 0
+
     context = {
         "participant": participant,
+        "solves": solves,
+        "total_points": total_points,
+        "total_solves": solves.count(),
     }
     return render(request, "core/dashboard.html", context)
 

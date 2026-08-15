@@ -29,6 +29,27 @@
         </div>
     </section>
 
+    <section class="surface section-block" aria-labelledby="solves-heading">
+        <div class="section-heading">
+            <div><p class="eyebrow">Your progress</p><h2 id="solves-heading">Solved challenges</h2></div>
+            <span class="section-heading__hint">{{ total_solves }} solved / {{ total_points }} pts</span>
+        </div>
+        {% if solves %}
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Solved challenges table">
+                <table><thead><tr><th>Challenge</th><th>Category</th><th>Type</th><th class="numeric">Points</th><th>Solved</th></tr></thead>
+                <tbody>{% for solve in solves %}<tr>
+                    <td><a href="{% url 'core:challenge' %}#category-{{ solve.challenge.category.slug }}">{{ solve.challenge.title }}</a></td>
+                    <td>{{ solve.challenge.category.name }}</td>
+                    <td>{{ solve.challenge.get_challenge_type_display }}</td>
+                    <td class="numeric">{{ solve.awarded_points }}</td>
+                    <td>{{ solve.created_at|date:"M j, g:i A" }}</td>
+                </tr>{% endfor %}</tbody></table>
+            </div>
+        {% else %}
+            <div class="empty-state empty-state--large"><strong>No solves yet</strong><span>Challenges you solve will show up here.</span></div>
+        {% endif %}
+    </section>
+
     <section class="surface section-block" aria-labelledby="account-heading">
         <div class="section-heading">
             <div><p class="eyebrow">Account</p><h2 id="account-heading">Participant details</h2></div>
