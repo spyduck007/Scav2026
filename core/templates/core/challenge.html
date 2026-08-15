@@ -103,6 +103,7 @@
                                             {% endif %}
                                         </article>
                                     {% endfor %}
+                                    {% if not category.challenges|length|divisibleby:2 %}<div class="challenge-grid__filler" aria-hidden="true"></div>{% endif %}
                                 </div>
                             {% else %}
                                 <div class="empty-state"><strong>No challenges published</strong></div>
