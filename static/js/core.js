@@ -221,6 +221,153 @@
         }
     }
 
+    let announceSolve = function () {};
+    const celebration = document.querySelector('[data-solve-celebration]');
+    const solveAudio = document.querySelector('[data-solve-audio]');
+    const solveFeedUrl = body.dataset.solveFeedUrl;
+    const teamYear = body.dataset.teamYear;
+
+    if (celebration && solveFeedUrl && teamYear) {
+        const solveMessages = [
+            '{name} just lit up the board for {team}.',
+            '{team} strikes again! {name} found the answer.',
+            '{name} came through clutch for {team}.',
+            'Another mystery down. {name} delivered for {team}.',
+            '{name} cracked the code and put {team} on the board.',
+            '{team} is on fire! {name} got the solve.',
+            '{name} found the way through for {team}.',
+            'Solved in style by {name} for {team}.',
+            '{name} just turned a clue into points for {team}.',
+            'Big brain moment: {name} got it for {team}.',
+        ];
+        const challengeName = celebration.querySelector('[data-solve-challenge]');
+        const solveMessage = celebration.querySelector('[data-solve-message]');
+        const points = celebration.querySelector('[data-solve-points]');
+        const dismiss = celebration.querySelector('[data-solve-dismiss]');
+        const queue = [];
+        const seen = new Set();
+        const channel = 'BroadcastChannel' in window ? new BroadcastChannel('scav-solves:' + teamYear) : null;
+        let active = false;
+        let closeTimer = null;
+        let lastSolveId = null;
+        let pollPending = false;
+        let previousFocus = null;
+
+        function setCursor(value) {
+            const parsed = Number(value);
+            if (!Number.isInteger(parsed) || parsed < 0) return;
+            lastSolveId = lastSolveId === null ? parsed : Math.max(lastSolveId, parsed);
+        }
+
+        function playSolveSound() {
+            if (!solveAudio) return;
+            solveAudio.muted = false;
+            solveAudio.currentTime = 0;
+            const playback = solveAudio.play();
+            if (playback) playback.catch(function () {});
+        }
+
+        function showNextSolve() {
+            if (active || !queue.length) return;
+            const solve = queue.shift();
+            active = true;
+            previousFocus = previousFocus || document.activeElement;
+            challengeName.textContent = solve.challenge;
+            solveMessage.textContent = solveMessages[Math.floor(Math.random() * solveMessages.length)]
+                .replace('{name}', solve.solver)
+                .replace('{team}', 'Class of ' + solve.team_year);
+            points.textContent = '+' + solve.points + ' points';
+            celebration.classList.remove('is-closing');
+            celebration.hidden = false;
+            body.classList.add('celebration-open');
+            dismiss.focus({preventScroll: true});
+            playSolveSound();
+            closeTimer = window.setTimeout(closeSolve, 6500);
+        }
+
+        function closeSolve() {
+            if (!active) return;
+            window.clearTimeout(closeTimer);
+            celebration.classList.add('is-closing');
+            window.setTimeout(function () {
+                celebration.hidden = true;
+                celebration.classList.remove('is-closing');
+                body.classList.remove('celebration-open');
+                active = false;
+                if (queue.length) {
+                    showNextSolve();
+                } else if (previousFocus && previousFocus.isConnected) {
+                    previousFocus.focus({preventScroll: true});
+                    previousFocus = null;
+                }
+            }, 250);
+        }
+
+        function receiveSolve(solve, broadcast) {
+            const solveId = Number(solve && solve.id);
+            if (!Number.isInteger(solveId) || solveId < 1 || seen.has(solveId)) return;
+            seen.add(solveId);
+            setCursor(solveId);
+            markChallengeSolved(solve.challenge_slug, solve.points);
+            queue.push(solve);
+            if (channel && broadcast) channel.postMessage(solve);
+            showNextSolve();
+        }
+
+        announceSolve = function (solve) { receiveSolve(solve, true); };
+        dismiss.addEventListener('click', closeSolve);
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && active) closeSolve();
+        });
+        if (channel) channel.addEventListener('message', function (event) { receiveSolve(event.data, false); });
+
+        function unlockSolveAudio() {
+            document.removeEventListener('pointerdown', unlockSolveAudio);
+            document.removeEventListener('keydown', unlockSolveAudio);
+            if (!solveAudio) return;
+            solveAudio.muted = true;
+            const playback = solveAudio.play();
+            if (playback) {
+                playback.then(function () {
+                    solveAudio.pause();
+                    solveAudio.currentTime = 0;
+                    solveAudio.muted = false;
+                }).catch(function () { solveAudio.muted = false; });
+            }
+        }
+        document.addEventListener('pointerdown', unlockSolveAudio);
+        document.addEventListener('keydown', unlockSolveAudio);
+
+        function pollSolves() {
+            if (pollPending) return;
+            pollPending = true;
+            const url = new URL(solveFeedUrl, window.location.origin);
+            if (lastSolveId !== null) url.searchParams.set('after', String(lastSolveId));
+            fetch(url, {credentials: 'same-origin', cache: 'no-store'})
+                .then(function (response) {
+                    if (!response.ok) throw new Error('Unable to load solve events');
+                    return response.json();
+                })
+                .then(function (data) {
+                    if (lastSolveId === null) {
+                        setCursor(data.latest_id || 0);
+                        return;
+                    }
+                    (data.events || []).forEach(function (solve) { receiveSolve(solve, true); });
+                    setCursor(data.latest_id);
+                })
+                .catch(function () {})
+                .finally(function () { pollPending = false; });
+        }
+
+        pollSolves();
+        window.setInterval(pollSolves, 2000);
+        window.addEventListener('focus', pollSolves);
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) pollSolves();
+        });
+    }
+
     document.querySelectorAll('.answer-form').forEach(function (form) {
         form.addEventListener('submit', function (event) {
             event.preventDefault();
@@ -240,9 +387,10 @@
                 showToast(data.message, STATUS_TAGS[data.status] || 'error');
                 if (input) input.value = '';
                 if (button) button.disabled = false;
+                if (data.solve) announceSolve(data.solve);
 
                 if (data.challenge && data.challenge.requires_refresh) {
-                    window.setTimeout(function () { window.location.reload(); }, 600);
+                    window.setTimeout(function () { window.location.reload(); }, data.solve ? 7000 : 600);
                     return;
                 }
                 if (data.status === 'correct' || data.status === 'already_solved') {

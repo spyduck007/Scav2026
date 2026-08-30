@@ -91,6 +91,34 @@ class FunctionalRegressionTests(TestCase):
         self.assertEqual(self.admin.graduation_year, original_year)
         self.assertNotIn("admin_view_as_class", client.session)
 
+    def test_solve_events_are_class_scoped_and_match_submission_payload(self):
+        client = self.client_for(self.student)
+        submission = client.post(
+            reverse("core:submit_challenge", args=[self.challenge.slug]),
+            {"answer": "correct"},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        event = submission.json()["solve"]
+        self.assertEqual(event["challenge"], self.challenge.title)
+        self.assertEqual(event["solver"], self.student.ion_username)
+        self.assertEqual(event["team_year"], 2027)
+
+        rival = Participant.objects.create(
+            ion_username="rival", graduation_year=2028
+        )
+        ChallengeSolve.objects.create(
+            challenge=self.challenge,
+            participant=rival,
+            team_year=2028,
+            awarded_points=100,
+            submitted_answer="correct",
+        )
+
+        feed = client.get(reverse("core:solve_events"), {"after": 0})
+        self.assertEqual(feed.status_code, 200)
+        self.assertEqual(feed.headers["Cache-Control"], "no-store")
+        self.assertEqual(feed.json()["events"], [event])
+
     def test_indirect_dependency_cycles_are_rejected(self):
         first = Challenge.objects.create(
             category=self.category, title="First", description="", answer="first"

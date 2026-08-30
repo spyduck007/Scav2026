@@ -29,7 +29,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import formats, timezone
 from django.utils.http import url_has_allowed_host_and_scheme
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 from requests_oauthlib import OAuth2Session
 
 from .models import (
@@ -669,6 +669,56 @@ def _submission_response(request, *, status: str, message: str, payload: dict | 
     return redirect("core:challenge")
 
 
+def _solve_event_payload(solve: ChallengeSolve) -> dict[str, Any]:
+    return {
+        "id": solve.pk,
+        "challenge": solve.challenge.title,
+        "challenge_slug": solve.challenge.slug,
+        "solver": str(solve.participant),
+        "team_year": solve.team_year,
+        "points": solve.awarded_points,
+    }
+
+
+@require_GET
+def solve_events(request):
+    """Return new solves for the signed-in participant's class."""
+    participant = _get_logged_in_participant(request)
+    if not participant:
+        return JsonResponse({"events": []}, status=401)
+
+    team_year = participant.graduation_year
+    if team_year not in set(settings.SCAV_HUNT_TEAM_YEARS):
+        return JsonResponse({"latest_id": 0, "events": []})
+
+    solves = ChallengeSolve.objects.filter(team_year=team_year).select_related(
+        "challenge", "participant"
+    )
+    after_raw = request.GET.get("after")
+    if after_raw is None:
+        latest_id = solves.order_by("-pk").values_list("pk", flat=True).first() or 0
+        response = JsonResponse({"latest_id": latest_id, "events": []})
+    else:
+        try:
+            after = int(after_raw)
+            if after < 0:
+                raise ValueError
+        except ValueError:
+            return JsonResponse({"error": "Invalid solve cursor."}, status=400)
+
+        new_solves = list(solves.filter(pk__gt=after).order_by("pk")[:20])
+        latest_id = new_solves[-1].pk if new_solves else after
+        response = JsonResponse(
+            {
+                "latest_id": latest_id,
+                "events": [_solve_event_payload(solve) for solve in new_solves],
+            }
+        )
+
+    response["Cache-Control"] = "no-store"
+    return response
+
+
 @require_POST
 def submit_challenge(request, challenge_slug: str):
     participant = _get_logged_in_participant(request)
@@ -839,6 +889,7 @@ def submit_challenge(request, challenge_slug: str):
                     "is_first_blood": is_first_blood,
                     "requires_refresh": requires_refresh,
                 },
+                "solve": _solve_event_payload(solve),
                 "leaderboard": _build_leaderboard(participant.graduation_year),
             },
         )

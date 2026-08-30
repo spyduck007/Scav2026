@@ -22,7 +22,7 @@
     </script>
     {% block extra_head %}{% endblock %}
 </head>
-<body class="site-body {% block body_class %}{% endblock %}" data-hunt-year="{{ HUNT_YEAR }}" {% block body_attributes %}{% endblock %}>
+<body class="site-body {% block body_class %}{% endblock %}" data-hunt-year="{{ HUNT_YEAR }}"{% if participant %} data-solve-feed-url="{% url 'core:solve_events' %}" data-team-year="{{ participant.graduation_year|default:'' }}"{% endif %} {% block body_attributes %}{% endblock %}>
     <a class="skip-link" href="#main-content">Skip to main content</a>
 
     {% if ENABLE_SNOW_OVERLAY %}
@@ -31,6 +31,29 @@
     {% endif %}
 
     {% include "core/includes/toasts.html" %}
+
+    {% if participant %}
+        <div class="solve-celebration" data-solve-celebration hidden>
+            <div class="solve-celebration__aurora" aria-hidden="true"></div>
+            <div class="solve-celebration__grid" aria-hidden="true"></div>
+            <div class="solve-celebration__sparks" aria-hidden="true">
+                <i style="--angle:0deg;--delay:-.2s"></i><i style="--angle:30deg;--delay:-.8s"></i>
+                <i style="--angle:60deg;--delay:-.4s"></i><i style="--angle:90deg;--delay:-1s"></i>
+                <i style="--angle:120deg;--delay:-.6s"></i><i style="--angle:150deg;--delay:-.1s"></i>
+                <i style="--angle:180deg;--delay:-.9s"></i><i style="--angle:210deg;--delay:-.3s"></i>
+                <i style="--angle:240deg;--delay:-.7s"></i><i style="--angle:270deg;--delay:-.5s"></i>
+                <i style="--angle:300deg;--delay:-1.1s"></i><i style="--angle:330deg;--delay:0s"></i>
+            </div>
+            <section class="solve-celebration__panel" role="dialog" aria-modal="true" aria-live="assertive" aria-labelledby="solve-celebration-title" aria-describedby="solve-celebration-detail">
+                <div class="solve-celebration__mark" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="m16 33 11 11 22-25"/></svg></div>
+                <h2 id="solve-celebration-title" data-solve-challenge></h2>
+                <p class="solve-celebration__detail" id="solve-celebration-detail" data-solve-message></p>
+                <strong class="solve-celebration__points" data-solve-points></strong>
+                <button type="button" class="solve-celebration__dismiss" data-solve-dismiss>Continue hunting</button>
+            </section>
+        </div>
+        <audio data-solve-audio src="{% static 'audio/success.mp3' %}" preload="auto"></audio>
+    {% endif %}
 
     <div class="site-frame">
         {% if participant %}

@@ -11,6 +11,7 @@ urlpatterns = [
     path("dashboard/", views.dashboard_view, name="dashboard"),
     path("rules/", views.rules_view, name="rules"),
     path("challenge/", views.challenge_view, name="challenge"),
+    path("challenge/solve-events/", views.solve_events, name="solve_events"),
     path(
         "challenge/<slug:challenge_slug>/submit/",
         views.submit_challenge,
